@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Package, Truck, CheckCircle } from 'lucide-react';
+import { getStatusLabel } from '../../utils/orderStatus';
 
 export const OperatorDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
@@ -63,7 +64,7 @@ export const OperatorDashboard = () => {
                                         <small style={{ color: 'var(--text-secondary)' }}>{o.customerAddress}</small>
                                     </td>
                                     <td>
-                                        <span className="badge badge-warning">{o.status}</span>
+                                        <span className="badge badge-warning">{getStatusLabel(o.status)}</span>
                                     </td>
                                     <td>
                                         {o.status === 'AWAITING_DISPATCH' && (

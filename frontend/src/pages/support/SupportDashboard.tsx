@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity, Clock, Plus, Search, CheckCircle, XCircle } from 'lucide-react';
+import { getStatusLabel } from '../../utils/orderStatus';
 
 export const SupportDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
@@ -177,7 +178,7 @@ export const SupportDashboard = () => {
                                 <td>{o.designatedOntSerial || 'Pendente'}</td>
                                 <td>
                                     <span className={`badge ${o.status === 'DELIVERY_CONFIRMED' ? 'badge-success' : 'badge-warning'}`}>
-                                        {o.status}
+                                        {getStatusLabel(o.status)}
                                     </span>
                                 </td>
                                 <td>

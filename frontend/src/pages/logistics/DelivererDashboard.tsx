@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { getStatusLabel } from '../../utils/orderStatus';
 
 export const DelivererDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
@@ -46,7 +47,7 @@ export const DelivererDashboard = () => {
                                     Equipamento: {o.designatedOntModel} (SN: {o.designatedOntSerial})
                                 </p>
                                 <div style={{ marginTop: '0.5rem' }}>
-                                    Status Atual: <span className="badge badge-warning">{o.status}</span>
+                                    Status Atual: <span className="badge badge-warning">{getStatusLabel(o.status)}</span>
                                 </div>
                             </div>
 
