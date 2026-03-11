@@ -46,6 +46,12 @@ const Sidebar = () => {
                 <NavLink to="/admin/deliverer" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <Truck size={20} /> Entregador App
                 </NavLink>
+
+                <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border-color)', opacity: 0.3 }}></div>
+
+                <NavLink to="/admin/docs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} style={{ color: 'var(--brand-primary)' }}>
+                    <LayoutDashboard size={20} /> Documentação API
+                </NavLink>
             </nav>
         </div>
     );

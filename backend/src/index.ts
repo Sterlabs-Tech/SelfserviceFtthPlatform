@@ -12,6 +12,12 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 import apiRoutes from './routes/api';
 
 // Main health-check / startup endpoint
@@ -27,7 +33,7 @@ import path from 'path';
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 

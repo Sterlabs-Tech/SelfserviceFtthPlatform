@@ -7,7 +7,7 @@ import { Users } from './pages/admin/Users';
 import { OperatorDashboard } from './pages/logistics/OperatorDashboard';
 import { DelivererDashboard } from './pages/logistics/DelivererDashboard';
 import { SupportDashboard } from './pages/support/SupportDashboard';
-
+import { DevSupport } from './pages/support/DevSupport';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import { Login } from './pages/auth/Login';
 
@@ -32,6 +32,7 @@ function AppRoutes() {
         <Route path="operator" element={<OperatorDashboard />} />
         <Route path="deliverer" element={<DelivererDashboard />} />
         <Route path="support" element={<SupportDashboard />} />
+        <Route path="docs" element={<DevSupport />} />
       </Route>
     </Routes>
   );

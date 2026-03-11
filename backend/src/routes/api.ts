@@ -7,6 +7,75 @@ import logisticsPortalRoutes from './logistics-portal';
 const router = Router();
 const prisma = new PrismaClient();
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id: type string
+ *         name: type string
+ *         email: type string
+ *         profile: type string
+ *         active: type boolean
+ *     Tenant:
+ *       type: object
+ *       properties:
+ *         id: type string
+ *         name: type string
+ *         active: type boolean
+ *         allowedServices:
+ *           type: array
+ *           items:
+ *             type: string
+ *         allowedUFs:
+ *           type: array
+ *           items:
+ *             type: string
+ *         logoUrl: type string
+ */
+
+/**
+ * @openapi
+ * /api/login:
+ *   post:
+ *     summary: Autentica um usuário
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *       401:
+ *         description: Credenciais inválidas
+ */
+
+/**
+ * @openapi
+ * /api/tenants:
+ *   get:
+ *     summary: Lista todas as tenants
+ *     tags: [Configurações]
+ *     responses:
+ *       200:
+ *         description: Lista de tenants
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Tenant'
+ */
 router.use('/auto-repair', eligibilityRoutes);
 router.use('/orders', orderRoutes);
 router.use('/logistics-portal', logisticsPortalRoutes);
