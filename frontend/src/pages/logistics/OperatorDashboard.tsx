@@ -4,7 +4,6 @@ import { Package, Truck, CheckCircle } from 'lucide-react';
 
 export const OperatorDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
-    const operatorId = "mock-id-logistics"; // Normally from Auth Context
 
     const loadQueue = () => {
         // For MVP, we load all orders due to mock

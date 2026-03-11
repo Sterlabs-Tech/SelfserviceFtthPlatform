@@ -21,6 +21,16 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', apiRoutes);
 
+import path from 'path';
+
+// Serve React Frontend static files
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 // Start server
 app.listen(port, () => {
   console.log(`Backend server listening at http://localhost:${port}`);
