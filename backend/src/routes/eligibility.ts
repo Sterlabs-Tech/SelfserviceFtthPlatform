@@ -5,6 +5,45 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // REQB01 - Serviço de Elegibilidade Auto Reparo
+/**
+ * @openapi
+ * /api/auto-repair/eligibility:
+ *   post:
+ *     summary: Verifica a elegibilidade do cliente para Auto Reparo
+ *     tags: [Público - Elegibilidade]
+ *     description: API utilizada por sistemas externos (Portal NIO, Apps) para validar se um cliente pode abrir uma ordem de autosserviço baseada em regras de negócio e estoque.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [subscriberId, tenantId, hcRegion]
+ *             properties:
+ *               subscriberId:
+ *                 type: string
+ *                 description: ID do Assinante (ex. CPF ou matrícula)
+ *               tenantId:
+ *                 type: string
+ *                 description: ID da Tenant (empresa parceira)
+ *               hcRegion:
+ *                 type: string
+ *                 description: UF ou Região do Home Connected para checagem de estoque
+ *     responses:
+ *       200:
+ *         description: Resultado da análise de elegibilidade
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 eligible:
+ *                   type: boolean
+ *                 reason:
+ *                   type: string
+ *                 slaEstimationHours:
+ *                   type: integer
+ */
 router.post('/eligibility', async (req, res) => {
     const { subscriberId, tenantId, hcRegion } = req.body;
 

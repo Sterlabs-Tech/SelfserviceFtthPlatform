@@ -5,6 +5,43 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // REQC01 - Serviço de Abertura Ordens de Auto Troca de ONT
+/**
+ * @openapi
+ * /api/orders/create:
+ *   post:
+ *     summary: Abre uma nova Ordem de Serviço de Auto Troca
+ *     tags: [Público - Ordens]
+ *     description: Endpoint para criação formal de ordens de autosserviço. Inicia automaticamente o workflow logístico.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantId, subscriberId, customerName, customerAddress, hcRegion]
+ *             properties:
+ *               tenantId:
+ *                 type: string
+ *               subscriberId:
+ *                 type: string
+ *               customerName:
+ *                 type: string
+ *               customerAddress:
+ *                 type: string
+ *               customerPhone:
+ *                 type: string
+ *               hcRegion:
+ *                 type: string
+ *               externalId:
+ *                 type: string
+ *               source:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Ordem criada com sucesso
+ *       400:
+ *         description: Erro na validação (estoque ou tenant)
+ */
 router.post('/create', async (req, res) => {
     const {
         tenantId, subscriberId, customerName, customerAddress,
