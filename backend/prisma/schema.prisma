@@ -54,6 +54,7 @@ model User {
   
   tenant              Tenant?             @relation(fields: [tenantId], references: [id])
   logisticsOperator   LogisticsOperator?  @relation(fields: [logisticsOperatorId], references: [id])
+  deliveries          Order[]             @relation("OrderDeliverer")
 }
 
 model Stock {
@@ -94,6 +95,7 @@ model Order {
 
   tenant              Tenant              @relation(fields: [tenantId], references: [id])
   operator            LogisticsOperator?  @relation(fields: [logisticsOperatorId], references: [id])
+  deliverer           User?               @relation("OrderDeliverer", fields: [delivererId], references: [id])
   history             OrderHistory[]
 }
 

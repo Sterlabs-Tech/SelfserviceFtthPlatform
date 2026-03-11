@@ -104,9 +104,18 @@ export const OperatorDashboard = () => {
                                     </td>
                                     <td>
                                         <span className="badge badge-warning">{getStatusLabel(o.status)}</span>
-                                        {o.delivererId && (
+                                        {o.deliverer ? (
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                                                Entregador: <strong>{o.deliverer.name}</strong>
+                                            </div>
+                                        ) : o.delivererId && (
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
                                                 Entregador: {o.delivererId}
+                                            </div>
+                                        )}
+                                        {o.designatedOntSerial && (
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                                                Serial ONT: <strong>{o.designatedOntSerial}</strong>
                                             </div>
                                         )}
                                     </td>

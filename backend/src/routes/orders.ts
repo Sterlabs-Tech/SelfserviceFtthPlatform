@@ -122,7 +122,7 @@ router.post('/create', async (req, res) => {
 // Endpoint for checking open orders (Operator Portal and Support)
 router.get('/', async (req, res) => {
     const orders = await prisma.order.findMany({
-        include: { tenant: true, operator: true }
+        include: { tenant: true, operator: true, deliverer: true }
     });
     return res.json(orders);
 });
