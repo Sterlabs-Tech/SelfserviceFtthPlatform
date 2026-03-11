@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Tenant {
+  id              String   @id @default(uuid())
+  name            String
+  active          Boolean  @default(true)
+  allowedServices String   // JSON array or comma separated e.g. "REPAIR,INSTALLATION"
+  allowedUFs      String   // JSON array or comma separated e.g. "SP,RJ"
+  logoUrl         String?  // Base64 or URL for the tenant logo
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users           User[]
+  orders          Order[]
+}
+
+model LogisticsOperator {
+  id              String   @id @default(uuid())
+  name            String
+  active          Boolean  @default(true)
+  regions         String   // JSON representing served UFs or Cities
+  slaHours        Int      @default(24) // Default SLA in hours
+  businessHours   String   @default("08:00-18:00") // simple representation
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users           User[]
+  stocks          Stock[]
+  orders          Order[]
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  name                String
+  email               String   @unique
+  password            String   @default("123456")
+  photoUrl            String?  // Base64 or URL for the user avatar
+  profile             String   // e.g. ADMIN, LOGISTICS_CONSULT, LOGISTICS_OPERATOR, DELIVERER, TENANT_OPERATOR, CUSTOMER_SUPPORT, TENANT_MANAGER
+  active              Boolean  @default(true)
+  tenantId            String?  // If user belongs to a Tenant
+  logisticsOperatorId String?  // If user belongs to a Logistics Operator
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  tenant              Tenant?             @relation(fields: [tenantId], references: [id])
+  logisticsOperator   LogisticsOperator?  @relation(fields: [logisticsOperatorId], references: [id])
+}
+
+model Stock {
+  id            String   @id @default(uuid())
+  operatorId    String
+  region        String   // UF or City
+  modelCode     String   // code/type/model
+  manufacturer  String
+  quantity      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  operator      LogisticsOperator @relation(fields: [operatorId], references: [id])
+}
+
+model Order {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  type                String   // e.g. REPAIR_ONT_SWAP
+  subscriberId        String
+  customerName        String
+  customerAddress     String
+  customerPhone       String
+  externalId          String?
+  source              String   // e.g. PORTAL, API, LEGACY
+  
+  // Status and Flow
+  status              String   @default("OPEN")
+  logisticsOperatorId String?
+  delivererId         String?  // Reference to User id if profile is DELIVERER
+  designatedOntModel  String?
+  designatedOntSerial String?
+  nfeNumber           String?
+  
+  slaTarget           DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  operator            LogisticsOperator?  @relation(fields: [logisticsOperatorId], references: [id])
+  history             OrderHistory[]
+}
+
+model OrderHistory {
+  id              String   @id @default(uuid())
+  orderId         String
+  timestamp       DateTime @default(now())
+  responsibleName String
+  responsibleId   String?
+  eventType       String
+  oldStatus       String?
+  newStatus       String?
+  reason          String?
+  evidenceUrl     String?
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}

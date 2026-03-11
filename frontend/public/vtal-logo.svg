@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <style>
+    .text-black { fill: #000000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 110px; letter-spacing: -6px; }
+    .dot { fill: #FFD919; }
+  </style>
+  <text x="10" y="100" class="text-black">V</text>
+  <rect x="95" y="45" width="22" height="22" class="dot"/>
+  <text x="130" y="100" class="text-black">tal</text>
+</svg>
