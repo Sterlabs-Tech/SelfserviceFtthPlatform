@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Truck, CheckCircle } from 'lucide-react';
+import { Package, Truck, CheckCircle, Thermometer, UserCog } from 'lucide-react';
 import { getStatusLabel } from '../../utils/orderStatus';
+import { calculateSLARemaining } from '../../utils/slaUtils';
 
 export const OperatorDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
@@ -26,9 +27,20 @@ export const OperatorDashboard = () => {
         loadQueue();
     };
 
-    const handleDispatch = async (orderId: string) => {
+    const handleDispatch = async (orderId: string, delivererId?: string) => {
+        const id = delivererId || prompt("Digite o ID do Entregador:", "entregador-mock-1");
+        if (!id) return;
         await axios.post('http://localhost:3001/api/logistics-portal/operator/dispatch', {
-            orderId, delivererId: "entregador-mock-1"
+            orderId, delivererId: id
+        });
+        loadQueue();
+    };
+
+    const handleReassign = async (orderId: string) => {
+        const id = prompt("Digite o NOVO ID do Entregador:");
+        if (!id) return;
+        await axios.post('http://localhost:3001/api/logistics-portal/reassign-deliverer', {
+            orderId, delivererId: id
         });
         loadQueue();
     };
@@ -49,7 +61,7 @@ export const OperatorDashboard = () => {
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Ordem</th>
+                                <th>Ordem / SLA</th>
                                 <th>Cliente / Endereço</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -58,13 +70,45 @@ export const OperatorDashboard = () => {
                         <tbody>
                             {orders.map((o) => (
                                 <tr key={o.id}>
-                                    <td>{o.externalId}</td>
+                                    <td>
+                                        <strong>{o.externalId}</strong>
+                                        {o.slaTarget && (() => {
+                                            const sla = calculateSLARemaining(o.slaTarget);
+                                            if (!sla) return null;
+                                            const colors = {
+                                                normal: 'var(--success)',
+                                                warning: '#f59e0b',
+                                                critical: '#ef4444',
+                                                expired: '#7f1d1d'
+                                            };
+                                            return (
+                                                <div style={{
+                                                    fontSize: '0.75rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.2rem',
+                                                    marginTop: '0.4rem',
+                                                    color: colors[sla.level],
+                                                    fontWeight: 600
+                                                }}>
+                                                    <Thermometer size={14} />
+                                                    {sla.isExpired ? 'SLA Vencido: ' : 'Restam: '}
+                                                    {sla.label}
+                                                </div>
+                                            );
+                                        })()}
+                                    </td>
                                     <td>
                                         <strong>{o.customerName}</strong><br />
                                         <small style={{ color: 'var(--text-secondary)' }}>{o.customerAddress}</small>
                                     </td>
                                     <td>
                                         <span className="badge badge-warning">{getStatusLabel(o.status)}</span>
+                                        {o.delivererId && (
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                                                Entregador: {o.delivererId}
+                                            </div>
+                                        )}
                                     </td>
                                     <td>
                                         {o.status === 'AWAITING_DISPATCH' && (
@@ -77,8 +121,17 @@ export const OperatorDashboard = () => {
                                                 <Truck size={16} /> Despachar (Entregador)
                                             </button>
                                         )}
-                                        {o.status === 'DISPATCHED_TO_DELIVERER' && (
-                                            <span className="badge badge-success"><CheckCircle size={14} /> Despachado</span>
+                                        {(o.status === 'AWAITING_PICKUP' || o.status === 'DISPATCHED_TO_DELIVERER') && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {o.status === 'DISPATCHED_TO_DELIVERER' && (
+                                                    <span className="badge badge-success" style={{ width: 'fit-content' }}>
+                                                        <CheckCircle size={14} /> Despachado
+                                                    </span>
+                                                )}
+                                                <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }} onClick={() => handleReassign(o.id)}>
+                                                    <UserCog size={14} /> Alterar Entregador
+                                                </button>
+                                            </div>
                                         )}
                                     </td>
                                 </tr>

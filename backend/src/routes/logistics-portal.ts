@@ -64,6 +64,27 @@ router.post('/operator/dispatch', async (req, res) => {
     return res.json({ success: true, order });
 });
 
+// REQD01 - Reatribuir Entregador (Permitido em AWAITING_PICKUP ou DISPATCHED_TO_DELIVERER)
+router.post('/operator/reassign-deliverer', async (req, res) => {
+    const { orderId, delivererId } = req.body;
+    const order = await prisma.order.update({
+        where: { id: orderId },
+        data: { delivererId }
+    });
+
+    await prisma.orderHistory.create({
+        data: {
+            orderId,
+            responsibleName: "Operador Logístico",
+            eventType: "DELIVERER_REASSIGNED",
+            newStatus: order.status,
+            reason: `Entregador alterado para: ${delivererId}`
+        }
+    });
+
+    return res.json({ success: true, order });
+});
+
 // REQD02 - Fila do Entregador
 router.get('/deliverer/queue/:delivererId', async (req, res) => {
     const { delivererId } = req.params;
