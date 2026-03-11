@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { Truck, X, Edit, Trash2 } from 'lucide-react';
 
 const UF_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
@@ -17,7 +17,7 @@ export const Logistics = () => {
     });
 
     const loadOps = () => {
-        axios.get('http://localhost:3001/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
+        api.get('/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
     };
 
     useEffect(() => {
@@ -39,7 +39,7 @@ export const Logistics = () => {
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Tem certeza que deseja excluir o operador ${name}?`)) return;
         try {
-            await axios.delete(`http://localhost:3001/api/logistics/${id}`);
+            await api.delete(`/api/logistics/${id}`);
             loadOps();
         } catch (err) {
             console.error(err);
@@ -56,9 +56,9 @@ export const Logistics = () => {
             };
 
             if (editingId) {
-                await axios.put(`http://localhost:3001/api/logistics/${editingId}`, payload);
+                await api.put(`/api/logistics/${editingId}`, payload);
             } else {
-                await axios.post('http://localhost:3001/api/logistics', payload);
+                await api.post('/api/logistics', payload);
             }
 
             setShowForm(false);

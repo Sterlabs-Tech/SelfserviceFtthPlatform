@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { Plus, X, Edit, Trash2 } from 'lucide-react';
 
 const SERVICE_OPTIONS = [
@@ -23,7 +23,7 @@ export const Tenants = () => {
     });
 
     const loadTenants = () => {
-        axios.get('http://localhost:3001/api/tenants').then(res => setTenants(res.data)).catch(e => console.error(e));
+        api.get('/api/tenants').then(res => setTenants(res.data)).catch(e => console.error(e));
     };
 
     useEffect(() => {
@@ -45,7 +45,7 @@ export const Tenants = () => {
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Tem certeza que deseja excluir a tenant ${name}?`)) return;
         try {
-            await axios.delete(`http://localhost:3001/api/tenants/${id}`);
+            await api.delete(`/api/tenants/${id}`);
             loadTenants();
         } catch (err) {
             console.error(err);
@@ -57,9 +57,9 @@ export const Tenants = () => {
         e.preventDefault();
         try {
             if (editingId) {
-                await axios.put(`http://localhost:3001/api/tenants/${editingId}`, formData);
+                await api.put(`/api/tenants/${editingId}`, formData);
             } else {
-                await axios.post('http://localhost:3001/api/tenants', formData);
+                await api.post('/api/tenants', formData);
             }
             setShowForm(false);
             setEditingId(null);

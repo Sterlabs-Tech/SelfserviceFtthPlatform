@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { getStatusLabel } from '../../utils/orderStatus';
 
@@ -8,7 +8,7 @@ export const DelivererDashboard = () => {
 
     const loadQueue = () => {
         // For MVP, we load all orders due to mock
-        axios.get('http://localhost:3001/api/orders').then(res => {
+        api.get('/api/orders').then(res => {
             setOrders(res.data.filter((o: any) =>
                 ['DISPATCHED_TO_DELIVERER', 'EN_ROUTE'].includes(o.status)
             ));
@@ -18,7 +18,7 @@ export const DelivererDashboard = () => {
     useEffect(() => { loadQueue(); }, []);
 
     const updateStatus = async (orderId: string, status: string, reason?: string) => {
-        await axios.post('http://localhost:3001/api/logistics-portal/deliverer/update-status', {
+        await api.post('/api/logistics-portal/deliverer/update-status', {
             orderId, status, reason: reason || "Atualizado pelo App do Entregador"
         });
         loadQueue();

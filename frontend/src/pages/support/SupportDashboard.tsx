@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { Activity, Clock, Plus, Search, CheckCircle, XCircle } from 'lucide-react';
 import { getStatusLabel } from '../../utils/orderStatus';
 
@@ -18,12 +18,12 @@ export const SupportDashboard = () => {
     const [orderState, setOrderState] = useState<{ loading?: boolean, success?: boolean, msg?: string }>({});
 
     const loadQueue = () => {
-        axios.get('http://localhost:3001/api/orders').then(res => setOrders(res.data));
+        api.get('/api/orders').then(res => setOrders(res.data));
     };
 
     useEffect(() => {
         loadQueue();
-        axios.get('http://localhost:3001/api/tenants').then(res => setTenants(res.data));
+        api.get('/api/tenants').then(res => setTenants(res.data));
         const interval = setInterval(loadQueue, 5000);
         return () => clearInterval(interval);
     }, []);
@@ -33,7 +33,7 @@ export const SupportDashboard = () => {
         setEligibility(null);
         setOrderState({});
         try {
-            const res = await axios.post('http://localhost:3001/api/auto-repair/eligibility', {
+            const res = await api.post('/api/auto-repair/eligibility', {
                 subscriberId, tenantId, hcRegion: 'SP' // Padrão
             });
             setEligibility(res.data);
@@ -52,7 +52,7 @@ export const SupportDashboard = () => {
                 externalId: "OS-" + Math.floor(Math.random() * 100000),
                 source: "PORTAL", hcRegion: 'SP'
             };
-            const res = await axios.post('http://localhost:3001/api/orders/create', payload);
+            const res = await api.post('/api/orders/create', payload);
             setOrderState({ success: true, msg: `Pedido criado com sucesso (ID: ${res.data.orderId})` });
             loadQueue();
             setTimeout(() => {

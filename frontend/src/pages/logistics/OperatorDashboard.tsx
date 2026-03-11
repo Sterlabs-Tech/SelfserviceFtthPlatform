@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { Package, Truck, CheckCircle, Thermometer, UserCog } from 'lucide-react';
 import { getStatusLabel } from '../../utils/orderStatus';
 import { calculateSLARemaining } from '../../utils/slaUtils';
@@ -9,7 +9,7 @@ export const OperatorDashboard = () => {
 
     const loadQueue = () => {
         // For MVP, we load all orders due to mock
-        axios.get('http://localhost:3001/api/orders').then(res => {
+        api.get('/api/orders').then(res => {
             setOrders(res.data.filter((o: any) =>
                 ['AWAITING_DISPATCH', 'EQUIPMENT_SEPARATED', 'AWAITING_PICKUP', 'DISPATCHED_TO_DELIVERER'].includes(o.status)
             ));
@@ -21,7 +21,7 @@ export const OperatorDashboard = () => {
     const handleBindOnt = async (orderId: string) => {
         const serial = prompt("Digite o SERIAL da ONT escolhida do estoque:");
         if (!serial) return;
-        await axios.post('http://localhost:3001/api/logistics-portal/operator/bind-ont', {
+        await api.post('/api/logistics-portal/operator/bind-ont', {
             orderId, designatedOntModel: "NOKIA-G1425G", designatedOntSerial: serial, nfeNumber: "NFE-9999"
         });
         loadQueue();
@@ -30,7 +30,7 @@ export const OperatorDashboard = () => {
     const handleDispatch = async (orderId: string, delivererId?: string) => {
         const id = delivererId || prompt("Digite o ID do Entregador:", "entregador-mock-1");
         if (!id) return;
-        await axios.post('http://localhost:3001/api/logistics-portal/operator/dispatch', {
+        await api.post('/api/logistics-portal/operator/dispatch', {
             orderId, delivererId: id
         });
         loadQueue();
@@ -39,7 +39,7 @@ export const OperatorDashboard = () => {
     const handleReassign = async (orderId: string) => {
         const id = prompt("Digite o NOVO ID do Entregador:");
         if (!id) return;
-        await axios.post('http://localhost:3001/api/logistics-portal/reassign-deliverer', {
+        await api.post('/api/logistics-portal/reassign-deliverer', {
             orderId, delivererId: id
         });
         loadQueue();

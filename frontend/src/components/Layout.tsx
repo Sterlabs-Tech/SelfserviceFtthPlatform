@@ -12,6 +12,10 @@ const Sidebar = () => {
                 </span>
             </div>
             <nav className="sidebar-nav">
+                {/* Seção: Cadastros */}
+                <div className="sidebar-section-title" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Cadastros
+                </div>
                 <NavLink
                     to="/admin/users"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -28,23 +32,32 @@ const Sidebar = () => {
                     to="/admin/logistics"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                    <Truck size={20} /> Rel. de Logística
+                    <Truck size={20} /> Operadores Logisticos
                 </NavLink>
+
+                {/* Seção: Operação Logística */}
+                <div className="sidebar-section-title" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Operação Logistica
+                </div>
                 <NavLink
                     to="/admin/stock"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
                     <Package size={20} /> Estoque
                 </NavLink>
-                <NavLink to="/admin/support" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <LayoutDashboard size={20} /> Gestão de Pedidos
-                </NavLink>
-
                 <NavLink to="/admin/operator" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <Package size={20} /> Fila do Operador
+                    <Package size={20} /> Esteira Despacho
                 </NavLink>
                 <NavLink to="/admin/deliverer" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <Truck size={20} /> Entregador App
+                    <Truck size={20} /> Esteira Entrega
+                </NavLink>
+
+                {/* Seção: Ordens */}
+                <div className="sidebar-section-title" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Ordens
+                </div>
+                <NavLink to="/admin/support" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <LayoutDashboard size={20} /> Gestão de Pedidos
                 </NavLink>
 
                 <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border-color)', opacity: 0.3 }}></div>

@@ -1,11 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 
 export const DevSupport = () => {
-    // In production, this will be served from the same host. 
-    // In dev, the backend is usually on 3001.
-    const swaggerUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:3001/api-docs'
-        : '/api-docs';
+    // In production, this will be served from the same host under /api-docs.
+    // In local dev via Vite proxy, it will also be accessible via /api-docs.
+    const swaggerUrl = '/api-docs';
 
     return (
         <div>

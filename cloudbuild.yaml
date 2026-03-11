@@ -21,6 +21,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'DATABASE_URL=postgresql://postgres.tgkecxmbsqqjcucfizkd:zwvyF79naObFyact@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true'
 
 images:
   - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/selfservice-repo/selfservice-app'

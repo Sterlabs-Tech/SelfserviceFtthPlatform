@@ -27,8 +27,28 @@ export const Login = () => {
     };
 
     return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
+        <div style={{ 
+            height: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'var(--bg-primary)',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            {/* Subtle background decoration similar to layout */}
+            <div style={{
+                position: 'absolute',
+                top: '-10%',
+                left: '-5%',
+                width: '40vw',
+                height: '40vw',
+                background: 'radial-gradient(circle, rgba(230,22,125,0.05) 0%, rgba(0,0,0,0) 70%)',
+                borderRadius: '50%',
+                zIndex: 0
+            }}></div>
+            
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem', zIndex: 1 }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <img src="/vtal-logo.png" alt="V.tal Logo" style={{ height: '48px', marginBottom: '1rem' }} />
                     <h1 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-primary)' }}>Acesso Restrito</h1>

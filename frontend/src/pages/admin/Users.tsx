@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { UserPlus, X, Edit, Trash2, Camera } from 'lucide-react';
 
 const PROFILE_OPTIONS = ['ADMIN', 'LOGISTICS_CONSULT', 'LOGISTICS_OPERATOR', 'DELIVERER', 'TENANT_OPERATOR', 'TENANT_MANAGER', 'CUSTOMER_SUPPORT'];
@@ -27,9 +27,9 @@ export const Users = () => {
     const loadData = async () => {
         try {
             const [uRes, tRes, oRes] = await Promise.all([
-                axios.get('http://localhost:3001/api/users'),
-                axios.get('http://localhost:3001/api/tenants'),
-                axios.get('http://localhost:3001/api/logistics')
+                api.get('/api/users'),
+                api.get('/api/tenants'),
+                api.get('/api/logistics')
             ]);
             setUsers(uRes.data);
             setTenants(tRes.data);
@@ -76,7 +76,7 @@ export const Users = () => {
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Tem certeza que deseja remover o usuário ${name}?`)) return;
         try {
-            await axios.delete(`http://localhost:3001/api/users/${id}`);
+            await api.delete(`/api/users/${id}`);
             loadData();
         } catch (err) {
             console.error(err);
@@ -113,9 +113,9 @@ export const Users = () => {
             };
 
             if (editingId) {
-                await axios.put(`http://localhost:3001/api/users/${editingId}`, finalPayload);
+                await api.put(`/api/users/${editingId}`, finalPayload);
             } else {
-                await axios.post('http://localhost:3001/api/users', finalPayload);
+                await api.post('/api/users', finalPayload);
             }
 
             resetForm();

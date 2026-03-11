@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import axios from 'axios';
+import api from '../services/apiClient';
 
 interface AuthContextType {
     user: any | null;
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const login = async (email: string, pass: string) => {
-        const res = await axios.post('http://localhost:3001/api/login', { email, password: pass });
+        const res = await api.post('/api/login', { email, password: pass });
         setUser(res.data.user);
         localStorage.setItem('@vtal-user', JSON.stringify(res.data.user));
     };

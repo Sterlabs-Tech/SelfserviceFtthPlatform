@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/apiClient';
 import { PackagePlus, X, Edit, Trash2 } from 'lucide-react';
 
 export const Stock = () => {
@@ -16,11 +16,11 @@ export const Stock = () => {
     });
 
     const loadStock = () => {
-        axios.get('http://localhost:3001/api/stock').then(res => setStock(res.data)).catch(e => console.error(e));
+        api.get('/api/stock').then(res => setStock(res.data)).catch(e => console.error(e));
     };
 
     const loadOps = () => {
-        axios.get('http://localhost:3001/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
+        api.get('/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
     };
 
     useEffect(() => {
@@ -43,7 +43,7 @@ export const Stock = () => {
     const handleDelete = async (id: string, code: string) => {
         if (!confirm(`Tem certeza que deseja diminuir o estoque do modelo ${code}?`)) return;
         try {
-            await axios.delete(`http://localhost:3001/api/stock/${id}`);
+            await api.delete(`/api/stock/${id}`);
             loadStock();
         } catch (err) {
             console.error(err);
@@ -59,9 +59,9 @@ export const Stock = () => {
                 quantity: Number(formData.quantity)
             };
             if (editingId) {
-                await axios.put(`http://localhost:3001/api/stock/${editingId}`, payload);
+                await api.put(`/api/stock/${editingId}`, payload);
             } else {
-                await axios.post('http://localhost:3001/api/stock', payload);
+                await api.post('/api/stock', payload);
             }
             setShowForm(false);
             setEditingId(null);
