@@ -270,13 +270,15 @@ export const Users = () => {
                                         {u.active ? 'Ativo' : 'Inativo'}
                                     </span>
                                 </td>
-                                <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                    <button onClick={() => handleEdit(u)} style={{ color: 'var(--brand-primary)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(u.id, u.name)} style={{ color: 'var(--danger)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                        <Trash2 size={16} />
-                                    </button>
+                                <td style={{ width: '100px' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <button onClick={() => handleEdit(u)} style={{ color: 'var(--brand-primary)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(u.id, u.name)} style={{ color: 'var(--danger)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
