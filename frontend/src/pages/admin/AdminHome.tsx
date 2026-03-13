@@ -5,7 +5,7 @@ import { LayoutDashboard, Package, Users, Truck, ArrowRight, TrendingUp, BarChar
 import api from '../../services/apiClient';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Legend, Cell
+    BarChart, Bar, Legend
 } from 'recharts';
 import { BrazilMap } from '../../components/BrazilMap';
 
