@@ -11,6 +11,7 @@ async function main() {
     
     const regions = ['SP', 'RJ', 'MG', 'RS', 'PR'];
     const op = operators[0];
+    if (!op) return;
     
     for (const region of regions) {
         await prisma.stock.create({

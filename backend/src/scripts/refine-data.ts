@@ -108,7 +108,7 @@ async function refineData() {
                     orderId: order.id,
                     responsibleName: i % 2 === 0 ? 'Operador Logístico' : 'NIO Core',
                     eventType: 'STATUS_UPDATED',
-                    newStatus: STATUS_FLOW[i],
+                    newStatus: STATUS_FLOW[i] as string,
                     reason: `Transição automática para status ${STATUS_FLOW[i]}`,
                     timestamp: new Date(Date.now() - (statusIndex - i + 0.5) * 3600000)
                 });
