@@ -10,6 +10,9 @@ RUN npm run build
 FROM node:20-slim
 WORKDIR /app
 
+# Instala dependências do sistema necessárias para o Prisma
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Copia e instala dependências do backend
 COPY backend/package*.json ./backend/
 WORKDIR /app/backend
