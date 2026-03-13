@@ -4,7 +4,7 @@ import api from '../services/apiClient';
 
 interface AuthContextType {
     user: any | null;
-    login: (email: string, pass: string) => Promise<void>;
+    login: (email: string, pass: string) => Promise<any>;
     logout: () => void;
     loading: boolean;
 }
@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await api.post('/api/login', { email, password: pass });
         setUser(res.data.user);
         localStorage.setItem('@vtal-user', JSON.stringify(res.data.user));
+        return res.data.user;
     };
 
     const logout = () => {

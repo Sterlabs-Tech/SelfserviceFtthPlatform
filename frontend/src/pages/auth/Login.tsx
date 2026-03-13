@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
+import { getHomeRoute } from '../../components/ProtectedRoute';
 
 export const Login = () => {
     const { login } = useAuth();
@@ -17,8 +18,8 @@ export const Login = () => {
         setError('');
         setLoading(true);
         try {
-            await login(email.trim(), password.trim());
-            navigate('/admin/tenants'); // Default redirect
+            const userData = await login(email.trim(), password.trim());
+            navigate(getHomeRoute(userData?.profile || 'ADMIN'));
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erro ao fazer login.');
         } finally {

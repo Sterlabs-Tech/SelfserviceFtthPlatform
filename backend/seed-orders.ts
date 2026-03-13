@@ -2,6 +2,22 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const firstNames = ["Maria", "José", "Ana", "Carlos", "Juliana", "Ricardo", "Fernanda", "Paulo", "Luciana", "Marcos", "Leandro", "Cláudia", "Roberto", "Patrícia", "Bruno", "Sonia", "Tiago", "Vanessa", "Gabriel", "Aline"];
+const lastNames = ["Silva", "Santos", "Oliveira", "Pereira", "Lima", "Souza", "Costa", "Rocha", "Mello", "Vinicius", "Almeida", "Nascimento", "Rodrigues", "Ferreira", "Gomes", "Carvalho", "Martins", "Araújo", "Pinto", "Barbosa"];
+const streets = ["Rua das Flores", "Av. Paulista", "Rua Augusta", "Rua Oscar Freire", "Alameda Santos", "Rua Bela Cintra", "Rua Haddock Lobo", "Av. Rebouças", "Rua da Consolação", "Av. Brigadeiro", "Rua Vergueiro", "Rua Domingos de Morais", "Av. Ipiranga", "Rua São Bento", "Rua Direita"];
+
+const IN_PROGRESS_STATUSES = [
+    'AWAITING_DISPATCH',
+    'EQUIPMENT_SEPARATED',
+    'AWAITING_PICKUP',
+    'DISPATCHED_TO_DELIVERER',
+    'EN_ROUTE',
+    'DELIVERY_CONFIRMED',
+    'RETURNED_FOR_REDELIVERY',
+    'ONT_ACTIVATION_STARTED',
+    'ONT_ASSOCIATION_FAILED'
+];
+
 async function main() {
     const tenants = await prisma.tenant.findMany();
     const operators = await prisma.logisticsOperator.findMany();
@@ -11,38 +27,47 @@ async function main() {
         return;
     }
 
-    const tId = tenants[0].id;
-    const oId = operators[0].id;
+    console.log(`Limpando ordens existentes...`);
+    await prisma.orderHistory.deleteMany({});
+    await prisma.order.deleteMany({});
 
-    const orderData = [
-        { customerName: "Maria Silva", status: "AWAITING_ELIGIBILITY", subscriberId: "HC1001", customerAddress: "Rua das Flores, 123", customerPhone: "11999998888" },
-        { customerName: "José Santos", status: "AWAITING_DISPATCH", subscriberId: "HC1002", customerAddress: "Av. Paulista, 1000", customerPhone: "11988887777" },
-        { customerName: "Ana Oliveira", status: "EQUIPMENT_SEPARATED", subscriberId: "HC1003", customerAddress: "Rua Augusta, 500", customerPhone: "11977776666" },
-        { customerName: "Carlos Pereira", status: "AWAITING_PICKUP", subscriberId: "HC1004", customerAddress: "Rua Oscar Freire, 200", customerPhone: "11966665555" },
-        { customerName: "Juliana Lima", status: "DISPATCHED_TO_DELIVERER", subscriberId: "HC1005", customerAddress: "Alameda Santos, 1500", customerPhone: "11955554444" },
-        { customerName: "Ricardo Souza", status: "DELIVERY_IN_PROGRESS", subscriberId: "HC1006", customerAddress: "Rua Bela Cintra, 800", customerPhone: "11944443333" },
-        { customerName: "Fernanda Costa", status: "CLIENT_CONTACTED", subscriberId: "HC1007", customerAddress: "Rua Haddock Lobo, 300", customerPhone: "11933332222" },
-        { customerName: "Paulo Rocha", status: "ACTIVATION_PENDING", subscriberId: "HC1008", customerAddress: "Av. Rebouças, 1200", customerPhone: "11922221111" },
-        { customerName: "Luciana Mello", status: "COMPLETED", subscriberId: "HC1009", customerAddress: "Rua da Consolação, 2000", customerPhone: "11911110000" },
-        { customerName: "Marcos Vinicius", status: "SUPPORT_REQUIRED", subscriberId: "HC1010", customerAddress: "Av. Brigadeiro, 3000", customerPhone: "11900009999" },
-    ];
+    console.log(`Gerando 200 ordens em andamento e 300 finalizadas...`);
 
-    console.log(`Criando ${orderData.length} ordens de exemplo...`);
+    const totalOrders = 500;
+    const completedCount = 300;
+    
+    for (let i = 0; i < totalOrders; i++) {
+        const isCompleted = i < completedCount;
+        const status = (isCompleted ? 'COMPLETED' : IN_PROGRESS_STATUSES[Math.floor(Math.random() * IN_PROGRESS_STATUSES.length)]) as string;
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]!;
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]!;
+        const street = streets[Math.floor(Math.random() * streets.length)]!;
+        const num = Math.floor(Math.random() * 2000) + 1;
+        
+        const slaTarget = new Date();
+        // Random SLA between 4 hours ago and 48 hours in the future
+        slaTarget.setHours(slaTarget.getHours() + (Math.floor(Math.random() * 52) - 4));
 
-    for (const data of orderData) {
         await prisma.order.create({
             data: {
-                ...data,
-                tenantId: tId,
-                logisticsOperatorId: oId,
+                customerName: `${firstName} ${lastName}`,
+                status: status,
+                subscriberId: `HC${1000 + i}`,
+                customerAddress: `${street}, ${num}`,
+                customerPhone: `${Math.floor(Math.random() * 89 + 10)}9${Math.floor(Math.random() * 89999999 + 10000000)}`,
+                tenantId: tenants[Math.floor(Math.random() * tenants.length)]!.id,
+                logisticsOperatorId: operators[Math.floor(Math.random() * operators.length)]!.id,
                 type: "REPAIR_ONT_SWAP",
                 source: "PORTAL",
                 externalId: `VTAL-${Math.floor(Math.random() * 90000) + 10000}`,
+                slaTarget: slaTarget,
             }
         });
+
+        if (i % 50 === 0) console.log(`Criadas ${i} ordens...`);
     }
 
-    console.log("Ordens de exemplo criadas com sucesso!");
+    console.log("500 ordens criadas com sucesso!");
 }
 
 main()

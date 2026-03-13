@@ -10,6 +10,7 @@ export const Stock = () => {
     const [formData, setFormData] = useState({
         operatorId: '',
         region: 'SP',
+        tipo: 'ONT',
         manufacturer: '',
         modelCode: '',
         quantity: 0
@@ -32,6 +33,7 @@ export const Stock = () => {
         setFormData({
             operatorId: item.operatorId,
             region: item.region,
+            tipo: item.tipo || 'ONT',
             manufacturer: item.manufacturer,
             modelCode: item.modelCode,
             quantity: item.quantity
@@ -65,7 +67,7 @@ export const Stock = () => {
             }
             setShowForm(false);
             setEditingId(null);
-            setFormData({ operatorId: ops[0]?.id || '', region: 'SP', manufacturer: '', modelCode: '', quantity: 0 });
+            setFormData({ operatorId: ops[0]?.id || '', region: 'SP', tipo: 'ONT', manufacturer: '', modelCode: '', quantity: 0 });
             loadStock();
         } catch (err) {
             console.error(err);
@@ -77,16 +79,16 @@ export const Stock = () => {
         <div>
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Inventário de ONTs</h1>
+                    <h1 className="page-title">Inventário de Materiais</h1>
                     <p className="page-subtitle">Acompanhe disponibilidade por Operador e Região.</p>
                 </div>
                 {!showForm && (
                     <button className="btn-primary" onClick={() => {
                         setEditingId(null);
-                        setFormData({ operatorId: ops[0]?.id || '', region: 'SP', manufacturer: '', modelCode: '', quantity: 0 });
+                        setFormData({ operatorId: ops[0]?.id || '', region: 'SP', tipo: 'ONT', manufacturer: '', modelCode: '', quantity: 0 });
                         setShowForm(true);
                     }}>
-                        <PackagePlus size={18} /> Cadastrar Equipamentos
+                        <PackagePlus size={18} /> Cadastrar
                     </button>
                 )}
             </div>
@@ -130,6 +132,12 @@ export const Stock = () => {
                             </select>
                         </div>
                         <div className="input-group">
+                            <label className="input-label">Tipo</label>
+                            <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} required>
+                                <option value="ONT">ONT</option>
+                            </select>
+                        </div>
+                        <div className="input-group">
                             <label className="input-label">Fabricante</label>
                             <input className="input-field" value={formData.manufacturer} onChange={e => setFormData({ ...formData, manufacturer: e.target.value })} required placeholder="Ex: Nokia, Huawei" />
                         </div>
@@ -155,6 +163,7 @@ export const Stock = () => {
                         <tr>
                             <th>Operador</th>
                             <th>Região</th>
+                            <th>Tipo</th>
                             <th>Fabricante</th>
                             <th>Modelo/Código</th>
                             <th>Quantidade</th>
@@ -166,6 +175,7 @@ export const Stock = () => {
                             <tr key={idx}>
                                 <td>{s.operator?.name || 'V.tal (Sede)'}</td>
                                 <td>{s.region}</td>
+                                <td>{s.tipo || 'ONT'}</td>
                                 <td>{s.manufacturer}</td>
                                 <td>{s.modelCode}</td>
                                 <td>
@@ -185,7 +195,7 @@ export const Stock = () => {
                         ))}
                         {stock.length === 0 && (
                             <tr>
-                                <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Estoque vazio ou não cadastrado.
                                 </td>
                             </tr>

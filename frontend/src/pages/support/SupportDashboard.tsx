@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/apiClient';
-import { Plus, Search, CheckCircle, Truck, XCircle, AlertTriangle, Eye, X } from 'lucide-react';
+import { Search, CheckCircle, Truck, XCircle, AlertTriangle, Eye, X, ShieldCheck, Flame } from 'lucide-react';
 import { getStatusLabel, PIPELINE_STATUS_ORDER, STATUS_COLORS } from '../../utils/orderStatus';
 
 export const SupportDashboard = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState<any[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
@@ -32,32 +34,91 @@ export const SupportDashboard = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // ── KPIs ──
+    // ── KPIs (SLA based) ──
     const kpis = useMemo(() => {
-        const delivered = orders.filter(o => o.status === 'DELIVERY_CONFIRMED' || o.status === 'COMPLETED').length;
-        const cancelled = orders.filter(o => o.status === 'CANCELLED').length;
-        const support = orders.filter(o => o.status === 'SUPPORT_REQUIRED').length;
-        const inProgress = orders.length - delivered - cancelled;
-        return { delivered, cancelled, support, inProgress };
+        const now = new Date();
+        const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+        // In-progress = all non-COMPLETED, non-CANCELLED
+        const inProgressOrders = orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED');
+        const inProgress = inProgressOrders.length;
+
+        let noPrazo = 0;
+        let risco = 0;
+        let vencido = 0;
+
+        inProgressOrders.forEach(o => {
+            if (!o.slaTarget) {
+                noPrazo++; // No SLA target = assume on time
+                return;
+            }
+            const target = new Date(o.slaTarget);
+            const diffMs = target.getTime() - now.getTime();
+            if (diffMs < 0) {
+                vencido++;
+            } else if (diffMs < TWO_HOURS) {
+                risco++;
+            } else {
+                noPrazo++;
+            }
+        });
+
+        return { inProgress, noPrazo, risco, vencido };
+    }, [orders]);
+
+    // ── Operator SLA breakdown ──
+    const operatorSla = useMemo(() => {
+        const now = new Date();
+        const TWO_HOURS = 2 * 60 * 60 * 1000;
+        const inProgressOrders = orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED');
+
+        const opMap: Record<string, { name: string, total: number, noPrazo: number, risco: number, vencido: number }> = {};
+
+        inProgressOrders.forEach(o => {
+            const opName = o.operator?.name || 'Sem Operador';
+            const opId = o.logisticsOperatorId || 'none';
+            if (!opMap[opId]) {
+                opMap[opId] = { name: opName, total: 0, noPrazo: 0, risco: 0, vencido: 0 };
+            }
+            opMap[opId].total++;
+
+            if (!o.slaTarget) {
+                opMap[opId].noPrazo++;
+                return;
+            }
+            const diffMs = new Date(o.slaTarget).getTime() - now.getTime();
+            if (diffMs < 0) {
+                opMap[opId].vencido++;
+            } else if (diffMs < TWO_HOURS) {
+                opMap[opId].risco++;
+            } else {
+                opMap[opId].noPrazo++;
+            }
+        });
+
+        return Object.values(opMap).sort((a, b) => b.total - a.total);
     }, [orders]);
 
     // ── Pipeline drilldown ──
     const pipelineData = useMemo(() => {
         const statusCounts: Record<string, number> = {};
         orders.forEach(o => {
-            statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+            // Map OPEN to AWAITING_DISPATCH as per "First status is Separar materiais"
+            let s = o.status;
+            if (s === 'OPEN') s = 'AWAITING_DISPATCH';
+            
+            statusCounts[s] = (statusCounts[s] || 0) + 1;
         });
 
-        const nonDelivered = orders.filter(o => o.status !== 'DELIVERY_CONFIRMED' && o.status !== 'COMPLETED' && o.status !== 'CANCELLED');
-        const totalNonDelivered = nonDelivered.length;
+        const totalOrders = orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED').length;
 
         return PIPELINE_STATUS_ORDER.map(status => ({
             status,
             label: getStatusLabel(status),
             color: STATUS_COLORS[status] || '#6b7280',
             count: statusCounts[status] || 0,
-            pct: totalNonDelivered > 0 ? ((statusCounts[status] || 0) / totalNonDelivered * 100) : 0,
-        })).filter(row => row.count > 0);
+            pct: totalOrders > 0 ? ((statusCounts[status] || 0) / totalOrders * 100) : 0,
+        }));
     }, [orders]);
 
     // ── Search ──
@@ -131,24 +192,61 @@ export const SupportDashboard = () => {
         return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
+    const formatSLA = (targetDate: string | Date | null) => {
+        if (!targetDate) return { text: '-', emoji: '⚪', color: 'var(--text-secondary)' };
+        
+        const now = new Date();
+        const target = new Date(targetDate);
+        const diffMs = target.getTime() - now.getTime();
+        const isPastDue = diffMs < 0;
+        
+        const absDiff = Math.abs(diffMs);
+        const hours = Math.floor(absDiff / (1000 * 60 * 60));
+        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let emoji = '🟢';
+        let color = '#10b981';
+
+        if (isPastDue) {
+            emoji = '🔥';
+            color = '#ef4444';
+        } else if (hours < 2) {
+            emoji = '🔴';
+            color = '#ef4444';
+        } else if (hours < 6) {
+            emoji = '🟡';
+            color = '#f59e0b';
+        }
+
+        return { 
+            text: `${isPastDue ? '-' : ''}${hours}h ${minutes}m`, 
+            emoji, 
+            color 
+        };
+    };
+
     // Orders filtered by a given status (for modal)
-    const getOrdersByStatus = (status: string) => orders.filter(o => o.status === status);
+    const getOrdersByStatus = (status: string) => {
+        return orders
+            .filter(o => {
+                let s = o.status;
+                if (s === 'OPEN') s = 'AWAITING_DISPATCH';
+                return s === status;
+            })
+            .sort((a, b) => {
+                const dateA = a.slaTarget ? new Date(a.slaTarget).getTime() : Infinity;
+                const dateB = b.slaTarget ? new Date(b.slaTarget).getTime() : Infinity;
+                return dateA - dateB;
+            });
+    };
 
     return (
         <div>
             {/* ── HEADER ── */}
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Gestão de Pedidos</h1>
+                    <h1 className="page-title">Pedidos em Andamento</h1>
                     <p className="page-subtitle">Painel de controle e acompanhamento de pedidos.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button className="btn-secondary" onClick={() => { setShowSearch(!showSearch); setSearchResults(null); setSearchTerm(''); }}>
-                        <Search size={18} /> Consultar OS
-                    </button>
-                    <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
-                        <Plus size={18} /> Criar Pedido
-                    </button>
                 </div>
             </div>
 
@@ -292,17 +390,8 @@ export const SupportDashboard = () => {
                 </div>
             )}
 
-            {/* ── KPI SUMMARY CARDS ── */}
+            {/* ── KPI SUMMARY CARDS (SLA-based) ── */}
             <div className="summary-cards">
-                <div className="summary-card">
-                    <div className="summary-card-icon" style={{ background: '#ecfdf5' }}>
-                        <CheckCircle size={26} color="#10b981" />
-                    </div>
-                    <div className="summary-card-info">
-                        <span className="summary-card-value">{kpis.delivered.toLocaleString('pt-BR')}</span>
-                        <span className="summary-card-label">Entregues</span>
-                    </div>
-                </div>
                 <div className="summary-card">
                     <div className="summary-card-icon" style={{ background: '#eff6ff' }}>
                         <Truck size={26} color="#3b82f6" />
@@ -313,12 +402,12 @@ export const SupportDashboard = () => {
                     </div>
                 </div>
                 <div className="summary-card">
-                    <div className="summary-card-icon" style={{ background: '#fef2f2' }}>
-                        <XCircle size={26} color="#ef4444" />
+                    <div className="summary-card-icon" style={{ background: '#ecfdf5' }}>
+                        <ShieldCheck size={26} color="#10b981" />
                     </div>
                     <div className="summary-card-info">
-                        <span className="summary-card-value">{kpis.cancelled.toLocaleString('pt-BR')}</span>
-                        <span className="summary-card-label">Cancelados</span>
+                        <span className="summary-card-value">{kpis.noPrazo.toLocaleString('pt-BR')}</span>
+                        <span className="summary-card-label">No Prazo</span>
                     </div>
                 </div>
                 <div className="summary-card">
@@ -326,8 +415,17 @@ export const SupportDashboard = () => {
                         <AlertTriangle size={26} color="#f59e0b" />
                     </div>
                     <div className="summary-card-info">
-                        <span className="summary-card-value">{kpis.support.toLocaleString('pt-BR')}</span>
-                        <span className="summary-card-label">Suporte Necessário</span>
+                        <span className="summary-card-value">{kpis.risco.toLocaleString('pt-BR')}</span>
+                        <span className="summary-card-label">Risco</span>
+                    </div>
+                </div>
+                <div className="summary-card">
+                    <div className="summary-card-icon" style={{ background: '#fef2f2' }}>
+                        <Flame size={26} color="#ef4444" />
+                    </div>
+                    <div className="summary-card-info">
+                        <span className="summary-card-value">{kpis.vencido.toLocaleString('pt-BR')}</span>
+                        <span className="summary-card-label">Vencido</span>
                     </div>
                 </div>
             </div>
@@ -336,8 +434,8 @@ export const SupportDashboard = () => {
             <div className="glass-panel">
                 <div className="drilldown-header">
                     <div>
-                        <h2 className="drilldown-title">Status dos Pedidos Não Entregues</h2>
-                        <p className="drilldown-subtitle">Detalhamento por etapa do fluxo logístico</p>
+                        <h2 className="drilldown-title">Status dos Pedidos</h2>
+                        <p className="drilldown-subtitle">Detalhamento por etapa do fluxo</p>
                     </div>
                 </div>
 
@@ -379,6 +477,69 @@ export const SupportDashboard = () => {
                 ))}
             </div>
 
+            {/* ── OPERATOR SLA BREAKDOWN ── */}
+            <div className="glass-panel" style={{ marginTop: '1.5rem' }}>
+                <div className="drilldown-header">
+                    <div>
+                        <h2 className="drilldown-title">Desempenho por Operador Logístico</h2>
+                        <p className="drilldown-subtitle">SLA dos pedidos em andamento por operador</p>
+                    </div>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--bg-accent)', fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase' as const }}>
+                                <th style={{ textAlign: 'left', padding: '0.75rem 1.5rem', fontWeight: 600 }}>Operador</th>
+                                <th style={{ textAlign: 'center', padding: '0.75rem', fontWeight: 600 }}>Total</th>
+                                <th style={{ textAlign: 'center', padding: '0.75rem', fontWeight: 600 }}>🛡️ No Prazo</th>
+                                <th style={{ textAlign: 'center', padding: '0.75rem', fontWeight: 600 }}>⚠️ Risco</th>
+                                <th style={{ textAlign: 'center', padding: '0.75rem', fontWeight: 600 }}>🔥 Vencido</th>
+                                <th style={{ textAlign: 'center', padding: '0.75rem', fontWeight: 600 }}>Saúde</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {operatorSla.map((op, idx) => {
+                                const pctNoPrazo = op.total > 0 ? (op.noPrazo / op.total * 100) : 0;
+                                const pctRisco = op.total > 0 ? (op.risco / op.total * 100) : 0;
+                                const pctVencido = op.total > 0 ? (op.vencido / op.total * 100) : 0;
+                                return (
+                                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '0.85rem 1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{op.name}</td>
+                                        <td style={{ textAlign: 'center', padding: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{op.total}</td>
+                                        <td style={{ textAlign: 'center', padding: '0.85rem' }}>
+                                            <span style={{ fontWeight: 600, color: '#10b981' }}>{op.noPrazo}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>({pctNoPrazo.toFixed(0)}%)</span>
+                                        </td>
+                                        <td style={{ textAlign: 'center', padding: '0.85rem' }}>
+                                            <span style={{ fontWeight: 600, color: '#f59e0b' }}>{op.risco}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>({pctRisco.toFixed(0)}%)</span>
+                                        </td>
+                                        <td style={{ textAlign: 'center', padding: '0.85rem' }}>
+                                            <span style={{ fontWeight: 600, color: '#ef4444' }}>{op.vencido}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>({pctVencido.toFixed(0)}%)</span>
+                                        </td>
+                                        <td style={{ textAlign: 'center', padding: '0.85rem', width: '200px' }}>
+                                            <div style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'var(--bg-tertiary)' }}>
+                                                <div style={{ width: `${pctNoPrazo}%`, background: '#10b981', transition: 'width 0.3s' }} />
+                                                <div style={{ width: `${pctRisco}%`, background: '#f59e0b', transition: 'width 0.3s' }} />
+                                                <div style={{ width: `${pctVencido}%`, background: '#ef4444', transition: 'width 0.3s' }} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {operatorSla.length === 0 && (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        Nenhum operador com pedidos em andamento.
+                    </div>
+                )}
+            </div>
+
             {/* ── STATUS DETAIL MODAL ── */}
             {modalStatus && (
                 <div className="modal-overlay" onClick={() => setModalStatus(null)}>
@@ -401,27 +562,52 @@ export const SupportDashboard = () => {
                                 <thead>
                                     <tr>
                                         <th>OS</th>
+                                        <th>SLA / Risco</th>
                                         <th>Tenant</th>
                                         <th>Cliente</th>
                                         <th>Endereço</th>
-                                        <th>Subscriber ID</th>
-                                        <th>Data de Abertura</th>
+                                        <th>Operador</th>
+                                        <th style={{ textAlign: 'center' }}>Detalhes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {getOrdersByStatus(modalStatus).map(o => (
                                         <tr key={o.id}>
                                             <td><strong>{o.externalId || '-'}</strong></td>
-                                            <td>{o.tenant?.name || '-'}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>{formatSLA(o.slaTarget).emoji}</span>
+                                                    <span style={{ fontWeight: 600, color: formatSLA(o.slaTarget).color, whiteSpace: 'nowrap' }}>
+                                                        {formatSLA(o.slaTarget).text}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-sm)', background: '#fff', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                    {o.tenant?.logoUrl ? (
+                                                        <img src={o.tenant.logoUrl} alt={o.tenant.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                                    ) : (
+                                                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{o.tenant?.name?.substring(0, 3)}</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td>{o.customerName}</td>
                                             <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{o.customerAddress}</td>
-                                            <td>{o.subscriberId}</td>
-                                            <td style={{ fontSize: '0.8rem' }}>{formatDate(o.createdAt)}</td>
+                                            <td>{o.operator?.name || '-'}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <button 
+                                                    onClick={() => navigate(`/admin/orders/${o.id}`)}
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                                >
+                                                    Ver Detalhes
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                     {getOrdersByStatus(modalStatus).length === 0 && (
                                         <tr>
-                                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Nenhum pedido encontrado.</td>
+                                            <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>Nenhum pedido encontrado.</td>
                                         </tr>
                                     )}
                                 </tbody>

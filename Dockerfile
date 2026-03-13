@@ -1,5 +1,5 @@
 # Estágio 1: Build do Frontend (React/Vite)
-FROM node:20 AS frontend-builder
+FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Estágio 2: Build do Backend (Node/Express/Prisma)
-FROM node:20
+FROM node:20-slim
 WORKDIR /app
 
 # Copia e instala dependências do backend
@@ -15,18 +15,20 @@ COPY backend/package*.json ./backend/
 WORKDIR /app/backend
 RUN npm install
 
-# Copia o código fonte do backend e o banco SQLite
+# Copia o código fonte do backend
 COPY backend/ ./
 # Gera o cliente Prisma
 RUN npx prisma generate
+# Compila o TypeScript do backend
+RUN npx tsc
 
 # Copia os artefatos compilados do frontend para que o backend possa servi-los estaticamente
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Expõe a porta que o Cloud Run exige
+# Define variáveis de ambiente
 ENV PORT=8080
 ENV NODE_ENV=production
 EXPOSE 8080
 
-# Inicia o servidor backend
-CMD ["npx", "tsx", "src/index.ts"]
+# Inicia o servidor backend a partir do código transpilado
+CMD ["node", "dist/index.js"]

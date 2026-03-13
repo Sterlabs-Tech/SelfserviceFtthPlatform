@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import eligibilityRoutes from './eligibility';
 import orderRoutes from './orders';
 import logisticsPortalRoutes from './logistics-portal';
+import dashboardRoutes from './dashboard';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -79,6 +80,7 @@ const prisma = new PrismaClient();
 router.use('/auto-repair', eligibilityRoutes);
 router.use('/orders', orderRoutes);
 router.use('/logistics-portal', logisticsPortalRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 // REQA02 - Tenants
 router.get('/tenants', async (req, res) => {
@@ -134,19 +136,45 @@ router.get('/logistics', async (req, res) => {
     res.json(ops);
 });
 router.post('/logistics', async (req, res) => {
-    const { name, active, regions, slaHours, businessHours } = req.body;
+    const { name, active, regions, slaHours, businessHours, zipCode, street, number, complement, neighborhood, city, state } = req.body;
     const op = await prisma.logisticsOperator.create({
-        data: { name, active: Boolean(active), regions, slaHours: Number(slaHours), businessHours }
+        data: { 
+            name, 
+            active: Boolean(active), 
+            regions, 
+            slaHours: Number(slaHours), 
+            businessHours,
+            zipCode,
+            street,
+            number,
+            complement,
+            neighborhood,
+            city,
+            state
+        }
     });
     res.json(op);
 });
 router.put('/logistics/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { active, slaHours, businessHours, regions, name } = req.body;
+        const { active, slaHours, businessHours, regions, name, zipCode, street, number, complement, neighborhood, city, state } = req.body;
         const op = await prisma.logisticsOperator.update({
             where: { id },
-            data: { active: Boolean(active), slaHours: Number(slaHours), businessHours, regions, name }
+            data: { 
+                active: Boolean(active), 
+                slaHours: Number(slaHours), 
+                businessHours, 
+                regions, 
+                name,
+                zipCode,
+                street,
+                number,
+                complement,
+                neighborhood,
+                city,
+                state
+            }
         });
         res.json(op);
     } catch (e: any) {

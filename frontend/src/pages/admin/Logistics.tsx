@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
-import { Truck, X, Edit, Trash2 } from 'lucide-react';
+import { Truck, X, Edit, Trash2, MapPin } from 'lucide-react';
 
 const UF_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
@@ -13,8 +13,20 @@ export const Logistics = () => {
         active: true,
         slaHours: 24,
         businessHours: '08:00 às 18:00',
-        regions: ''
+        regions: '',
+        zipCode: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: ''
     });
+
+    const emptyForm = {
+        name: '', active: true, slaHours: 24, businessHours: '08:00 às 18:00', regions: '',
+        zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: ''
+    };
 
     const loadOps = () => {
         api.get('/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
@@ -30,7 +42,14 @@ export const Logistics = () => {
             active: op.active,
             slaHours: op.slaHours,
             businessHours: op.businessHours,
-            regions: op.regions
+            regions: op.regions,
+            zipCode: op.zipCode || '',
+            street: op.street || '',
+            number: op.number || '',
+            complement: op.complement || '',
+            neighborhood: op.neighborhood || '',
+            city: op.city || '',
+            state: op.state || ''
         });
         setEditingId(op.id);
         setShowForm(true);
@@ -44,6 +63,26 @@ export const Logistics = () => {
         } catch (err) {
             console.error(err);
             alert('Erro ao excluir operador logístico.');
+        }
+    };
+
+    const handleCepBlur = async () => {
+        const cep = formData.zipCode.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await response.json();
+            if (!data.erro) {
+                setFormData(prev => ({
+                    ...prev,
+                    street: data.logradouro || prev.street,
+                    neighborhood: data.bairro || prev.neighborhood,
+                    city: data.localidade || prev.city,
+                    state: data.uf || prev.state
+                }));
+            }
+        } catch (err) {
+            console.error('Erro ao consultar CEP:', err);
         }
     };
 
@@ -63,7 +102,7 @@ export const Logistics = () => {
 
             setShowForm(false);
             setEditingId(null);
-            setFormData({ name: '', active: true, slaHours: 24, businessHours: '08:00 às 18:00', regions: '' });
+            setFormData(emptyForm);
             loadOps();
         } catch (err) {
             console.error(err);
@@ -81,7 +120,7 @@ export const Logistics = () => {
                 {!showForm && (
                     <button className="btn-primary" onClick={() => {
                         setEditingId(null);
-                        setFormData({ name: '', active: true, slaHours: 24, businessHours: '08:00 às 18:00', regions: '' });
+                        setFormData(emptyForm);
                         setShowForm(true);
                     }}>
                         <Truck size={18} /> Novo Operador
@@ -98,6 +137,7 @@ export const Logistics = () => {
                         </button>
                     </div>
                     <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        {/* Basic Info */}
                         <div className="input-group">
                             <label className="input-label">Nome da Empresa</label>
                             <input className="input-field" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ex: Logística Rápida" />
@@ -117,6 +157,58 @@ export const Logistics = () => {
                             <label className="input-label">Horário Útil</label>
                             <input className="input-field" value={formData.businessHours} onChange={e => setFormData({ ...formData, businessHours: e.target.value })} required placeholder="Ex: 08:00 às 18:00" />
                         </div>
+
+                        {/* Address Section */}
+                        <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <MapPin size={18} style={{ color: 'var(--brand-primary)' }} />
+                                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>Endereço do Estoque Regional</h3>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '180px 120px 1fr', gap: '1rem' }}>
+                                <div className="input-group">
+                                    <label className="input-label">CEP</label>
+                                    <input
+                                        className="input-field"
+                                        value={formData.zipCode}
+                                        onChange={e => setFormData({ ...formData, zipCode: e.target.value })}
+                                        onBlur={handleCepBlur}
+                                        placeholder="00000-000"
+                                        maxLength={9}
+                                        style={{ background: 'var(--brand-primary-light)', fontWeight: 600 }}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Número</label>
+                                    <input className="input-field" value={formData.number} onChange={e => setFormData({ ...formData, number: e.target.value })} placeholder="Nº" />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Complemento</label>
+                                    <input className="input-field" value={formData.complement} onChange={e => setFormData({ ...formData, complement: e.target.value })} placeholder="Sala, Galpão, etc." />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginTop: '1rem' }}>
+                                <div className="input-group">
+                                    <label className="input-label">Rua / Logradouro</label>
+                                    <input className="input-field" value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} placeholder="Preenchido automaticamente pelo CEP" />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: '1rem', marginTop: '1rem' }}>
+                                <div className="input-group">
+                                    <label className="input-label">Bairro</label>
+                                    <input className="input-field" value={formData.neighborhood} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} placeholder="Bairro" />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Cidade</label>
+                                    <input className="input-field" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="Cidade" />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">UF</label>
+                                    <input className="input-field" value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })} placeholder="UF" maxLength={2} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Regions */}
                         <div className="input-group" style={{ gridColumn: 'span 2' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                                 <label className="input-label" style={{ marginBottom: 0 }}>Regiões Atendidas (UFs)</label>
@@ -154,6 +246,8 @@ export const Logistics = () => {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Buttons */}
                         <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                             <button type="button" className="btn-secondary" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancelar</button>
                             <button type="submit" className="btn-primary">Salvar Operador</button>
@@ -170,6 +264,7 @@ export const Logistics = () => {
                             <th>Status</th>
                             <th>SLA (horas)</th>
                             <th>Horário Útil</th>
+                            <th>Endereço</th>
                             <th>Regiões Atendidas</th>
                             <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
                         </tr>
@@ -185,6 +280,9 @@ export const Logistics = () => {
                                 </td>
                                 <td>{o.slaHours}h</td>
                                 <td>{o.businessHours}</td>
+                                <td style={{ fontSize: '0.8rem', maxWidth: '200px' }}>
+                                    {o.city && o.state ? `${o.city}/${o.state}` : '-'}
+                                </td>
                                 <td>{o.regions}</td>
                                 <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                     <button onClick={() => handleEdit(o)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
@@ -198,7 +296,7 @@ export const Logistics = () => {
                         ))}
                         {ops.length === 0 && (
                             <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Nenhum Operador cadastrado.
                                 </td>
                             </tr>
