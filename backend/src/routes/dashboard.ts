@@ -30,7 +30,8 @@ router.get('/stats', async (req, res) => {
             }),
             prisma.order.groupBy({ 
                 by: ['customerState'], 
-                _count: { id: true }
+                _count: { id: true },
+                orderBy: { customerState: 'asc' }
             }),
             prisma.logisticsOperator.findMany({
                 where: { active: true },
