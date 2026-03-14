@@ -140,7 +140,6 @@ router.get('/logistics/:id/details', async (req, res) => {
                     select: { id: true, name: true, email: true, profile: true, active: true }
                 },
                 stocks: true,
-                stocks: true,
                 _count: {
                     select: { orders: true, users: true }
                 }
