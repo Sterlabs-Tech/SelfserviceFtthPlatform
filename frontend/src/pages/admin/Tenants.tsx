@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
-import { Plus, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, X, Edit, Trash2, AlertCircle } from 'lucide-react';
 
 const SERVICE_OPTIONS = [
     { value: 'AUTO_INSTALL', label: 'Autoinstalação' },
@@ -10,11 +10,12 @@ const SERVICE_OPTIONS = [
 
 const UF_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
-export const Tenants = () => {
+export const Tenants: React.FC = () => {
     const [tenants, setTenants] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ id: string, name: string } | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         active: true,
@@ -26,7 +27,7 @@ export const Tenants = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const res = await api.get('/api/tenants');
+            const res = await api.get('/tenants');
             setTenants(res.data);
         } catch (e) {
             console.error(e);
@@ -51,14 +52,16 @@ export const Tenants = () => {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Tem certeza que deseja excluir a tenant ${name}?`)) return;
+    const handleDelete = async () => {
+        if (!confirmDelete) return;
         try {
-            await api.delete(`/api/tenants/${id}`);
-            loadData();
-        } catch (err) {
-            console.error(err);
-            alert('Erro ao excluir Tenant.');
+            await api.delete(`/tenants/${confirmDelete.id}`);
+            setTenants(tenants.filter(t => t.id !== confirmDelete.id));
+            setConfirmDelete(null);
+        } catch (error: any) {
+            console.error('Error deleting tenant:', error);
+            alert(error.response?.data?.error || 'Erro ao excluir tenant');
+            setConfirmDelete(null);
         }
     };
 
@@ -66,7 +69,7 @@ export const Tenants = () => {
         e.preventDefault();
         try {
             if (editingId) {
-                await api.put(`/api/tenants/${editingId}`, formData);
+                await api.put(`/tenants/${editingId}`, formData);
             } else {
                 await api.post('/api/tenants', formData);
             }
@@ -86,6 +89,9 @@ export const Tenants = () => {
                 <div>
                     <h1 className="page-title">Tenants Habilitadas</h1>
                     <p className="page-subtitle">Gerencie as operadoras habilitadas no Autosserviço.</p>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 500 }}>
+                        <Edit size={14} /> Clique em qualquer linha para editar os dados da tenant.
+                    </div>
                 </div>
                 {!showForm && (
                     <button className="btn-primary" onClick={() => {
@@ -223,7 +229,7 @@ export const Tenants = () => {
                             <th>Status</th>
                             <th>Serviços Permitidos</th>
                             <th>UFs Habilitadas</th>
-                            <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>Excluir</th>
                         </tr>
                     </thead>
                         {isLoading ? (
@@ -253,7 +259,7 @@ export const Tenants = () => {
                             </tr>
                         ) : tenants.length > 0 ? (
                             tenants.map((t, idx) => (
-                                <tr key={idx}>
+                                <tr key={idx} onClick={() => handleEdit(t)} style={{ cursor: 'pointer' }}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             {t.logoUrl ? (
@@ -273,13 +279,10 @@ export const Tenants = () => {
                                             {t.active ? 'Ativo' : 'Inativo'}
                                         </span>
                                     </td>
-                                    <td>{t.allowedServices}</td>
-                                    <td>{t.allowedUFs}</td>
-                                    <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                        <button onClick={() => handleEdit(t)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(t.id, t.name)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
+                                    <td style={{ maxWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-all', fontSize: '0.85rem' }}>{t.allowedServices}</td>
+                                    <td style={{ maxWidth: '300px', whiteSpace: 'normal', wordBreak: 'break-all', fontSize: '0.85rem' }}>{t.allowedUFs}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: t.id, name: t.name }); }} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
                                             <Trash2 size={16} />
                                         </button>
                                     </td>
@@ -294,6 +297,60 @@ export const Tenants = () => {
                         )}
                 </table>
             </div>
+
+            {/* Custom Delete Confirmation Modal */}
+            {confirmDelete && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '1rem'
+                }}>
+                    <div className="glass-panel" style={{ maxWidth: '400px', width: '100%', padding: '2rem', textAlign: 'center' }}>
+                        <div style={{ 
+                            width: '60px', 
+                            height: '60px', 
+                            background: 'var(--danger-light)', 
+                            borderRadius: '50%', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            margin: '0 auto 1.5rem',
+                            color: 'var(--danger)'
+                        }}>
+                            <AlertCircle size={32} />
+                        </div>
+                        <h3 style={{ margin: '0 0 1rem' }}>Confirmar Exclusão</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                            Deseja realmente excluir a tenant <strong>{confirmDelete.name}</strong>? 
+                            Esta ação não pode ser desfeita.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button 
+                                className="btn-secondary" 
+                                onClick={() => setConfirmDelete(null)}
+                                style={{ flex: 1 }}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                className="btn-primary" 
+                                onClick={handleDelete}
+                                style={{ flex: 1, background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            >
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

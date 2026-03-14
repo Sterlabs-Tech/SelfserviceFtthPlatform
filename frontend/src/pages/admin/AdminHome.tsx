@@ -5,7 +5,7 @@ import { LayoutDashboard, Package, Users, Truck, ArrowRight, TrendingUp, BarChar
 import api from '../../services/apiClient';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Legend
+    BarChart, Bar, Legend, LabelList
 } from 'recharts';
 import { BrazilMap } from '../../components/BrazilMap';
 
@@ -59,7 +59,7 @@ export const AdminHome = () => {
     }
 
     const cards = [
-        { icon: <LayoutDashboard size={28} />, label: 'Pedidos Abertos', value: data.totalOpenOrders, color: '#e6167d', route: '/admin/support' },
+        { icon: <LayoutDashboard size={28} />, label: 'Pedidos em Andamento', value: data.totalOpenOrders, color: '#e6167d', route: '/admin/support' },
         { icon: <Package size={28} />, label: 'ONT em Estoque', value: data.totalStock, color: '#10b981', route: '/admin/stock' },
         { icon: <Truck size={28} />, label: 'Operadores', value: data.totalOperators, color: '#f59e0b', route: '/admin/logistics' },
         { icon: <Users size={28} />, label: 'Usuários', value: data.totalUsers, color: '#8b5cf6', route: '/admin/users' },
@@ -122,7 +122,7 @@ export const AdminHome = () => {
             </div>
 
             {/* Main Charts Row */}
-            <div className="grid-2-1" style={{ marginBottom: '2rem' }}>
+            <div className="grid-1-1" style={{ marginBottom: '2rem' }}>
                 {/* 30 Day Daily Orders */}
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -147,26 +147,35 @@ export const AdminHome = () => {
                     </div>
                 </div>
 
-                {/* SLA Compliance */}
+                {/* Monthly Volume */}
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
                         <BarChart3 size={20} style={{ color: 'var(--brand-primary)' }} />
-                        <h3 style={{ fontSize: '1.1rem', margin: 0 }}>SLA Compliance (6 Meses)</h3>
+                        <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Volume de Pedidos por Mês</h3>
                     </div>
-                    <div style={{ height: '300px' }}>
+                    <div style={{ height: '300px', width: '100%' }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.slaCompliance} layout="vertical">
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="month" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} width={60} />
+                            <BarChart 
+                                data={data.slaCompliance.map((m: any) => ({ ...m, total: (m.success || 0) + (m.inProgress || 0) + (m.cancelled || 0) }))} 
+                                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} />
                                 <Tooltip 
-                                    formatter={(value: any) => `${(value as number).toFixed(1)}%`}
                                     contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
                                 />
-                                <Legend verticalAlign="top" align="right" iconType="circle" />
-                                <Bar dataKey="withinSla" name="No Prazo" stackId="a" fill="#10b981" />
-                                <Bar dataKey="overdue" name="Atrasadas" stackId="a" fill="#ef4444" />
-                                <Bar dataKey="cancelled" name="Canceladas" stackId="a" fill="#94a3b8" />
+                                <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
+                                <Bar dataKey="success" name="Finalizados" stackId="a" fill="#10b981" />
+                                <Bar dataKey="inProgress" name="Em Andamento" stackId="a" fill="#f59e0b" />
+                                <Bar dataKey="cancelled" name="Cancelados" stackId="a" fill="#ef4444">
+                                    <LabelList 
+                                        dataKey="total" 
+                                        position="top" 
+                                        style={{ fill: 'var(--text-secondary)', fontSize: '10px', fontWeight: 600 }} 
+                                        offset={8}
+                                    />
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

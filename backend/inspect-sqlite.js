@@ -1,17 +1,23 @@
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
-async function listTables() {
+async function checkSqlite() {
   let db;
   try {
     db = await open({
-      filename: './dev.db',
+      filename: './prisma/dev.db',
       driver: sqlite3.Database
     });
 
-    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
-    console.log("Tables in dev.db:");
-    tables.forEach(t => console.log(`- ${t.name}`));
+    const tables = ['LogisticsOperator', 'User', '"Order"', 'Stock', 'MaterialItem'];
+    for (const table of tables) {
+      try {
+        const count = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+        console.log(`${table}: ${count.count} items`);
+      } catch (e) {
+        console.log(`${table}: Table not found or error`);
+      }
+    }
 
   } catch (error) {
     console.error('Error:', error);
@@ -20,4 +26,4 @@ async function listTables() {
   }
 }
 
-listTables();
+checkSqlite();

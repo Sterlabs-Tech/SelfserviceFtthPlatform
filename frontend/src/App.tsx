@@ -12,6 +12,7 @@ import { DevSupport } from './pages/support/DevSupport';
 import { CreateOrder } from './pages/support/CreateOrder';
 import { OrderSearch } from './pages/support/OrderSearch';
 import { OrderDetail } from './pages/support/OrderDetail';
+import { StatusOrders } from './pages/support/StatusOrders';
 import { AdminHome } from './pages/admin/AdminHome';
 import { OperatorDetails } from './pages/admin/OperatorDetails';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
@@ -54,6 +55,7 @@ function AppRoutes() {
                 <Route path="support" element={<SupportDashboard />} />
                 <Route path="orders/new" element={<CreateOrder />} />
                 <Route path="orders/search" element={<OrderSearch />} />
+                <Route path="orders/status/:status" element={<StatusOrders />} />
                 <Route path="orders/:id" element={<OrderDetail />} />
                 <Route path="docs" element={<DevSupport />} />
             </Route>
@@ -83,6 +85,7 @@ function AppRoutes() {
 }
 
 function App() {
+    console.log('App component rendering...');
     return (
         <AuthProvider>
             <AppRoutes />

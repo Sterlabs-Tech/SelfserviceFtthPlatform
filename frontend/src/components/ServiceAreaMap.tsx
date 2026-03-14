@@ -54,9 +54,12 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
         regions ? regions.split(',').map(r => normalize(r)) : [], 
     [regions]);
 
-    const isStateWide = useMemo(() => 
-        activeRegions.includes(normalize(state)),
-    [activeRegions, state]);
+    const isStateWide = useMemo(() => {
+        const normStateStatus = activeRegions.includes(normalize(state));
+        // Only trigger statewide if 'regions' is JUST the state name OR if we explicitly want statewide
+        // If there are specific cities, we prioritize those.
+        return normStateStatus && activeRegions.length === 1 && activeRegions[0] === normalize(state);
+    }, [activeRegions, state]);
 
     useEffect(() => {
         const fetchGeoData = async () => {

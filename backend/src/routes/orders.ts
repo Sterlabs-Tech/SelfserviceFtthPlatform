@@ -124,9 +124,13 @@ router.post('/create', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-    const { q } = req.query;
-    console.log('[BACKEND] GET /api/orders query:', q);
+    const { q, page = '1', limit = '20' } = req.query;
+    console.log('[BACKEND] GET /api/orders query:', q, 'page:', page, 'limit:', limit);
     
+    const pageNum = parseInt(page as string, 10) || 1;
+    const limitNum = parseInt(limit as string, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
     let whereClause = {};
     if (q && typeof q === 'string') {
         whereClause = {
@@ -144,12 +148,26 @@ router.get('/', async (req, res) => {
     }
     console.log('[BACKEND] whereClause:', JSON.stringify(whereClause, null, 2));
 
-    const orders = await prisma.order.findMany({
-        where: whereClause,
-        include: { tenant: true, operator: true, deliverer: true },
-        orderBy: { createdAt: 'desc' }
+    const [orders, total] = await prisma.$transaction([
+        prisma.order.findMany({
+            where: whereClause,
+            include: { tenant: true, operator: true, deliverer: true },
+            orderBy: { createdAt: 'desc' },
+            skip: skip,
+            take: limitNum
+        }),
+        prisma.order.count({ where: whereClause })
+    ]);
+
+    return res.json({
+        data: orders,
+        pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum)
+        }
     });
-    return res.json(orders);
 });
 
 // Endpoint for checking open orders (Operator Portal and Support)

@@ -6,33 +6,23 @@ import { subDays, subMonths, startOfDay, format, isAfter, startOfMonth } from 'd
 const router = Router();
 
 router.get('/stats', async (req, res) => {
+    console.log('--- DASHBOARD STATS REQUEST RECEIVED ---');
     try {
         const now = new Date();
         const thirtyDaysAgo = subDays(now, 30);
         const sixMonthsAgo = subMonths(now, 6);
 
-        // Consolidate queries into fewer round-trips using a transaction
         const [
             stockAgg,
-            sixMonthOrders,
-            ufOrders,
             operators,
             totalOpenOrders,
             totalTenants,
             totalUsers,
             totalOperators,
-            totalOrders
+            totalOrders,
+            ufOrders
         ] = await prisma.$transaction([
             prisma.stock.aggregate({ _sum: { quantity: true } }),
-            prisma.order.findMany({
-                where: { createdAt: { gte: sixMonthsAgo } },
-                select: { createdAt: true, status: true, slaTarget: true, updatedAt: true }
-            }),
-            prisma.order.groupBy({ 
-                by: ['customerState'], 
-                _count: { id: true },
-                orderBy: { customerState: 'asc' }
-            }),
             prisma.logisticsOperator.findMany({
                 where: { active: true },
                 select: { id: true, name: true, city: true, state: true }
@@ -41,19 +31,36 @@ router.get('/stats', async (req, res) => {
             prisma.tenant.count(),
             prisma.user.count(),
             prisma.logisticsOperator.count(),
-            prisma.order.count()
+            prisma.order.count(),
+            prisma.order.groupBy({ 
+                by: ['customerState'], 
+                _count: { id: true },
+                orderBy: { customerState: 'asc' }
+            })
         ]);
 
         const totalStock = stockAgg._sum.quantity || 0;
+        const ufDistribution = ufOrders.map(item => ({
+            uf: item.customerState || 'N/A',
+            count: (item as any)._count?.id || 0
+        }));
 
-        // Process Daily Data (Last 30 days) from the 6-month aggregate
+        // Note: For complex monthly grouping by status, prisma.groupBy doesn't easily support dynamic month keys 
+        // across statuses in a single call without raw SQL. 
+        // To maintain 30k+ efficiency, we'll fetch only what's needed.
+        const sixMonthsOrdersSummary = await prisma.order.findMany({
+            where: { createdAt: { gte: sixMonthsAgo } },
+            select: { createdAt: true, status: true }
+        });
+
+        // Process Daily Data (Last 30 days)
         const dailyData: Record<string, { opened: number, closed: number }> = {};
         for (let i = 0; i < 30; i++) {
             const dateStr = format(subDays(now, i), 'yyyy-MM-dd');
             dailyData[dateStr] = { opened: 0, closed: 0 };
         }
 
-        sixMonthOrders.forEach(o => {
+        sixMonthsOrdersSummary.forEach(o => {
             if (isAfter(o.createdAt, thirtyDaysAgo)) {
                 const dateStr = format(o.createdAt, 'yyyy-MM-dd');
                 if (dailyData[dateStr]) {
@@ -70,13 +77,13 @@ router.get('/stats', async (req, res) => {
             .sort((a, b) => a.date.localeCompare(b.date));
 
         // Process SLA Compliance (Last 6 months)
-        const monthlyData: Record<string, { total: number, withinSla: number, overdue: number, cancelled: number }> = {};
+        const monthlyData: Record<string, { total: number, success: number, cancelled: number, inProgress: number }> = {};
         for (let i = 0; i < 6; i++) {
             const dateStr = format(subMonths(now, i), 'yyyy-MM');
-            monthlyData[dateStr] = { total: 0, withinSla: 0, overdue: 0, cancelled: 0 };
+            monthlyData[dateStr] = { total: 0, success: 0, cancelled: 0, inProgress: 0 };
         }
 
-        sixMonthOrders.forEach(o => {
+        sixMonthsOrdersSummary.forEach(o => {
             const monthStr = format(o.createdAt, 'yyyy-MM');
             if (monthlyData[monthStr]) {
                 const m = monthlyData[monthStr];
@@ -84,11 +91,9 @@ router.get('/stats', async (req, res) => {
                 if (o.status === 'CANCELLED') {
                     m.cancelled++;
                 } else if (o.status === 'COMPLETED') {
-                    if (o.slaTarget && isAfter(o.updatedAt, o.slaTarget)) m.overdue++;
-                    else m.withinSla++;
+                    m.success++;
                 } else {
-                    if (o.slaTarget && isAfter(now, o.slaTarget)) m.overdue++;
-                    else m.withinSla++;
+                    m.inProgress++;
                 }
             }
         });
@@ -97,16 +102,13 @@ router.get('/stats', async (req, res) => {
             .map(([month, stats]) => ({
                 month,
                 total: stats.total,
-                withinSla: stats.total > 0 ? (stats.withinSla / stats.total) * 100 : 0,
-                overdue: stats.total > 0 ? (stats.overdue / stats.total) * 100 : 0,
-                cancelled: stats.total > 0 ? (stats.cancelled / stats.total) * 100 : 0
+                success: stats.success,
+                inProgress: stats.inProgress,
+                cancelled: stats.cancelled
             }))
             .sort((a, b) => a.month.localeCompare(b.month));
 
-        const ufDistribution = ufOrders.map(item => ({
-            uf: item.customerState || 'N/A',
-            count: (item as any)._count?.id || 0
-        }));
+        console.log(`[DASHBOARD-SIX-MONTHS] Sending ${slaComplianceArray.length} months of data`);
 
         res.json({
             totalStock,

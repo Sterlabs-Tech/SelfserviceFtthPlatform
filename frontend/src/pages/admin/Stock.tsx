@@ -10,22 +10,25 @@ export const Stock = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         operatorId: '',
-        region: 'SP',
         tipo: 'ONT',
-        manufacturer: '',
-        modelCode: '',
+        manufacturer: 'Nokia',
+        modelCode: 'G-240W-C',
         quantity: 0
     });
+
+    const [materials, setMaterials] = useState<any[]>([]);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [stockRes, opsRes] = await Promise.all([
+            const [stockRes, opsRes, matRes] = await Promise.all([
                 api.get('/api/stock'),
-                api.get('/api/logistics')
+                api.get('/api/logistics'),
+                api.get('/api/materials')
             ]);
             setStock(stockRes.data);
             setOps(opsRes.data);
+            setMaterials(matRes.data);
         } catch (e) {
             console.error(e);
         } finally {
@@ -37,10 +40,39 @@ export const Stock = () => {
         loadData();
     }, []);
 
+    const resetForm = () => {
+        const filtered = materials.filter(m => m.tipo === 'ONT');
+        setFormData({ 
+            operatorId: ops[0]?.id || '', 
+            tipo: 'ONT', 
+            manufacturer: filtered[0]?.manufacturer || '', 
+            modelCode: filtered[0]?.modelCode || '', 
+            quantity: 0 
+        });
+    };
+
+    useEffect(() => {
+        if (materials.length > 0) {
+            const filtered = materials.filter(m => m.tipo === formData.tipo);
+            if (filtered.length > 0) {
+                // If current model doesn't belong to current type, reset to first available for type
+                if (!filtered.find(m => m.modelCode === formData.modelCode)) {
+                    setFormData(prev => ({ 
+                        ...prev, 
+                        manufacturer: filtered[0].manufacturer,
+                        modelCode: filtered[0].modelCode 
+                    }));
+                }
+            }
+        }
+    }, [formData.tipo, materials]);
+
+    const manufacturers = Array.from(new Set(materials.filter(m => m.tipo === formData.tipo).map(m => m.manufacturer)));
+    const models = materials.filter(m => m.tipo === formData.tipo && m.manufacturer === formData.manufacturer).map(m => m.modelCode);
+
     const handleEdit = (item: any) => {
         setFormData({
             operatorId: item.operatorId,
-            region: item.region,
             tipo: item.tipo || 'ONT',
             manufacturer: item.manufacturer,
             modelCode: item.modelCode,
@@ -51,13 +83,13 @@ export const Stock = () => {
     };
 
     const handleDelete = async (id: string, code: string) => {
-        if (!confirm(`Tem certeza que deseja diminuir o estoque do modelo ${code}?`)) return;
+        if (!confirm(`Tem certeza que deseja excluir o estoque do modelo ${code}?`)) return;
         try {
             await api.delete(`/api/stock/${id}`);
             loadData();
         } catch (err) {
             console.error(err);
-            alert('Erro ao retirar estoque.');
+            alert('Erro ao excluir estoque.');
         }
     };
 
@@ -75,7 +107,7 @@ export const Stock = () => {
             }
             setShowForm(false);
             setEditingId(null);
-            setFormData({ operatorId: ops[0]?.id || '', region: 'SP', tipo: 'ONT', manufacturer: '', modelCode: '', quantity: 0 });
+            resetForm();
             loadData();
         } catch (err) {
             console.error(err);
@@ -88,12 +120,12 @@ export const Stock = () => {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Inventário de Materiais</h1>
-                    <p className="page-subtitle">Acompanhe disponibilidade por Operador e Região.</p>
+                    <p className="page-subtitle">Acompanhe disponibilidade consolidada por Operador Logístico.</p>
                 </div>
                 {!showForm && (
                     <button className="btn-primary" onClick={() => {
                         setEditingId(null);
-                        setFormData({ operatorId: ops[0]?.id || '', region: 'SP', tipo: 'ONT', manufacturer: '', modelCode: '', quantity: 0 });
+                        resetForm();
                         setShowForm(true);
                     }}>
                         <PackagePlus size={18} /> Cadastrar
@@ -113,12 +145,7 @@ export const Stock = () => {
                         <div className="input-group">
                             <label className="input-label">Operador Logístico</label>
                             <select className="input-field" value={formData.operatorId} onChange={e => {
-                                const newOpId = e.target.value;
-                                const op = ops.find(o => o.id === newOpId);
-                                const allowedRegions = op && op.regions ? op.regions.split(',').map((r: string) => r.trim()).filter(Boolean) : [];
-                                // If current region is not in the new allowed list, reset it
-                                const newRegion = allowedRegions.length > 0 && !allowedRegions.includes(formData.region) ? allowedRegions[0] : formData.region;
-                                setFormData({ ...formData, operatorId: newOpId, region: newRegion });
+                                setFormData({ ...formData, operatorId: e.target.value });
                             }} required>
                                 <option value="" disabled>Selecione um operador</option>
                                 {ops.map(o => (
@@ -127,37 +154,32 @@ export const Stock = () => {
                             </select>
                         </div>
                         <div className="input-group">
-                            <label className="input-label">Região Atendida (Município)</label>
-                            <select className="input-field" value={formData.region} onChange={e => setFormData({ ...formData, region: e.target.value })} required disabled={!formData.operatorId}>
-                                {(() => {
-                                    const selectedOp = ops.find(o => o.id === formData.operatorId);
-                                    if (!selectedOp || !selectedOp.regions) return <option value="" disabled>Selecione um operador primeiro</option>;
-                                    const opMunis = selectedOp.regions.split(',').map((r: string) => r.trim()).filter(Boolean);
-                                    return (
-                                        <>
-                                            <option value="" disabled>Selecione um município</option>
-                                            {opMunis.map((muni: string) => (
-                                                <option key={muni} value={muni}>{muni}</option>
-                                            ))}
-                                        </>
-                                    );
-                                })()}
-                            </select>
-                        </div>
-                        <div className="input-group">
                             <label className="input-label">Tipo</label>
-                            <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} required>
+                            <select className="input-field" value={formData.tipo} onChange={e => {
+                                setFormData({ 
+                                    ...formData, 
+                                    tipo: e.target.value
+                                });
+                            }} required>
                                 <option value="ONT">ONT</option>
                                 <option value="MESH">MESH</option>
                             </select>
                         </div>
                         <div className="input-group">
                             <label className="input-label">Fabricante</label>
-                            <input className="input-field" value={formData.manufacturer} onChange={e => setFormData({ ...formData, manufacturer: e.target.value })} required placeholder="Ex: Nokia, Huawei" />
+                            <select className="input-field" value={formData.manufacturer} onChange={e => setFormData({ ...formData, manufacturer: e.target.value })} required>
+                                {manufacturers.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="input-group">
                             <label className="input-label">Modelo/Código</label>
-                            <input className="input-field" value={formData.modelCode} onChange={e => setFormData({ ...formData, modelCode: e.target.value })} required placeholder="Ex: G-240W-C" />
+                            <select className="input-field" value={formData.modelCode} onChange={e => setFormData({ ...formData, modelCode: e.target.value })} required>
+                                {models.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="input-group" style={{ gridColumn: 'span 2' }}>
                             <label className="input-label">Quantidade em Estoque</label>
@@ -176,7 +198,6 @@ export const Stock = () => {
                     <thead>
                         <tr>
                             <th>Operador</th>
-                            <th>Região</th>
                             <th>Tipo</th>
                             <th>Fabricante</th>
                             <th>Modelo/Código</th>
@@ -186,7 +207,7 @@ export const Stock = () => {
                     </thead>
                         {isLoading ? (
                             <tr>
-                                <td colSpan={7} style={{ textAlign: 'center', padding: '4rem' }}>
+                                <td colSpan={6} style={{ textAlign: 'center', padding: '4rem' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                                         <svg width="60" height="60" viewBox="0 0 100 100" className="fidget-spinner">
                                             <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
@@ -204,7 +225,7 @@ export const Stock = () => {
                                         </svg>
                                         <div style={{ textAlign: 'center' }}>
                                             <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.1rem', display: 'block' }}>Consultando inventário...</span>
-                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Aguarde enquanto carregamos o estoque regional</span>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Aguarde enquanto carregamos o estoque local</span>
                                         </div>
                                     </div>
                                 </td>
@@ -213,12 +234,11 @@ export const Stock = () => {
                             stock.map((s, idx) => (
                                 <tr key={idx}>
                                     <td>{s.operator?.name || 'V.tal (Sede)'}</td>
-                                    <td>{s.region}</td>
                                     <td>{s.tipo || 'ONT'}</td>
                                     <td>{s.manufacturer}</td>
                                     <td>{s.modelCode}</td>
                                     <td>
-                                        <span className={`badge ${s.quantity > 0 ? 'badge-success' : 'badge-danger'}`}>
+                                        <span className={`badge ${s.quantity > 20 ? 'badge-success' : s.quantity > 0 ? 'badge-warning' : 'badge-danger'}`}>
                                             {s.quantity} em estoque
                                         </span>
                                     </td>
@@ -234,7 +254,7 @@ export const Stock = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
+                                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Estoque vazio ou não cadastrado.
                                 </td>
                             </tr>

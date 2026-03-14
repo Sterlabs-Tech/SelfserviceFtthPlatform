@@ -17,13 +17,12 @@ async function main() {
         await prisma.stock.create({
             data: {
                 operatorId: op.id,
-                region: region,
                 modelCode: 'NOKIA-G1425G',
                 manufacturer: 'NOKIA',
                 quantity: 100
             }
         });
-        console.log(`Added 100 stock for ${op.name} in ${region}`);
+        console.log(`Added 100 stock for ${op.name}`);
     }
 }
 

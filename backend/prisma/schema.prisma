@@ -68,7 +68,6 @@ model User {
 model Stock {
   id           String            @id @default(uuid())
   operatorId   String
-  region       String
   modelCode    String
   tipo         String            @default("ONT")
   manufacturer String
@@ -78,6 +77,17 @@ model Stock {
   operator     LogisticsOperator @relation(fields: [operatorId], references: [id])
 
   @@index([operatorId])
+}
+
+model MaterialItem {
+  id           String   @id @default(uuid())
+  tipo         String   // ONT, MESH, etc
+  manufacturer String
+  modelCode    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tipo, manufacturer, modelCode])
 }
 
 model Order {
@@ -114,6 +124,9 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([customerState])
+  @@index([tenantId])
+  @@index([logisticsOperatorId])
+  @@index([delivererId])
 }
 
 model OrderHistory {
@@ -128,4 +141,6 @@ model OrderHistory {
   reason          String?
   evidenceUrl     String?
   order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }

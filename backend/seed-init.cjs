@@ -26,7 +26,8 @@ async function main() {
       active: true,
       regions: 'SP,RJ',
       slaHours: 24,
-      businessHours: '08:00-18:00'
+      businessStart: '08:00',
+      businessEnd: '18:00'
     }
   });
   console.log('Operator created:', operator.name);

@@ -9,8 +9,8 @@ export const OperatorDashboard = () => {
 
     const loadQueue = () => {
         // For MVP, we load all orders due to mock
-        api.get('/api/orders').then(res => {
-            setOrders(res.data.filter((o: any) =>
+        api.get('/api/orders?limit=1000').then(res => {
+            setOrders(res.data.data.filter((o: any) =>
                 ['AWAITING_DISPATCH', 'EQUIPMENT_SEPARATED', 'AWAITING_PICKUP', 'DISPATCHED_TO_DELIVERER'].includes(o.status)
             ));
         });

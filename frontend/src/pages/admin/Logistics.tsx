@@ -146,6 +146,9 @@ export const Logistics = () => {
                 <div>
                     <h1 className="page-title">Operadores Logísticos</h1>
                     <p className="page-subtitle">Controle os parceiros responsáveis pelo despacho e entrega das ONTs.</p>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 500 }}>
+                        <Eye size={14} /> Clique em qualquer linha para visualizar os detalhes do operador.
+                    </div>
                 </div>
                 {!showForm && (
                     <button className="btn-primary" onClick={() => {
@@ -212,7 +215,7 @@ export const Logistics = () => {
                         <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                                 <MapPin size={18} style={{ color: 'var(--brand-primary)' }} />
-                                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>Endereço do Estoque Regional</h3>
+                                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>Endereço do Estoque Local</h3>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '180px 120px 1fr', gap: '1rem' }}>
                                 <div className="input-group">
@@ -338,7 +341,6 @@ export const Logistics = () => {
                             <th>SLA</th>
                             <th>UF</th>
                             <th>Municípios Atendidos</th>
-                            <th style={{ width: '100px', textAlign: 'center' }}>Detalhes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -369,7 +371,7 @@ export const Logistics = () => {
                             </tr>
                         ) : ops.length > 0 ? (
                             ops.map((o, idx) => (
-                                <tr key={idx}>
+                                <tr key={idx} onClick={() => navigate(`/admin/logistics/${o.id}`)} style={{ cursor: 'pointer' }}>
                                     <td>{o.name}</td>
                                     <td>
                                         <span className={`badge ${o.active ? 'badge-success' : 'badge-danger'}`}>
@@ -386,15 +388,6 @@ export const Logistics = () => {
                                                 )) : <li>Nenhum município</li>}
                                             </ul>
                                         </div>
-                                    </td>
-                                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                        <button 
-                                            onClick={() => navigate(`/admin/logistics/${o.id}`)} 
-                                            style={{ color: 'var(--brand-primary)', padding: '0.4rem', background: 'rgba(255, 217, 25, 0.1)', borderRadius: '8px', display: 'inline-flex' }} 
-                                            title="Visualizar Detalhes"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
                                     </td>
                                 </tr>
                             ))

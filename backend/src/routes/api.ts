@@ -139,6 +139,8 @@ router.get('/logistics/:id/details', async (req, res) => {
                 users: {
                     select: { id: true, name: true, email: true, profile: true, active: true }
                 },
+                stocks: true,
+                stocks: true,
                 _count: {
                     select: { orders: true, users: true }
                 }
@@ -206,6 +208,7 @@ router.get('/logistics/:id/details', async (req, res) => {
             operator,
             deliverers: operator.users,
             totalDeliveries: operator._count.orders,
+            stocks: operator.stocks,
             performance: sortedPerformance
         });
     } catch (e: any) {
@@ -290,24 +293,29 @@ router.delete('/logistics/:id', async (req, res) => {
 
 
 // REQA03 - Stock
+router.get('/materials', async (req, res) => {
+    const materials = await prisma.materialItem.findMany();
+    res.json(materials);
+});
+
 router.get('/stock', async (req, res) => {
     const stock = await prisma.stock.findMany({ include: { operator: true } });
     res.json(stock);
 });
 router.post('/stock', async (req, res) => {
-    const { operatorId, region, modelCode, manufacturer, quantity, tipo } = req.body;
+    const { operatorId, modelCode, manufacturer, quantity, tipo } = req.body;
     const stock = await prisma.stock.create({
-        data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
+        data: { operatorId, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
     });
     res.json(stock);
 });
 router.put('/stock/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { operatorId, region, modelCode, manufacturer, quantity, tipo } = req.body;
+        const { operatorId, modelCode, manufacturer, quantity, tipo } = req.body;
         const stock = await prisma.stock.update({
             where: { id },
-            data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
+            data: { operatorId, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
         });
         res.json(stock);
     } catch (e: any) {

@@ -25,6 +25,8 @@ export const Users = () => {
         active: true
     });
 
+    const [confirmDelete, setConfirmDelete] = useState<{ id: string, name: string } | null>(null);
+
     const loadData = async () => {
         setIsLoading(true);
         try {
@@ -77,10 +79,11 @@ export const Users = () => {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Tem certeza que deseja remover o usuário ${name}?`)) return;
+    const handleDelete = async () => {
+        if (!confirmDelete) return;
         try {
-            await api.delete(`/api/users/${id}`);
+            await api.delete(`/api/users/${confirmDelete.id}`);
+            setConfirmDelete(null);
             loadData();
         } catch (err) {
             console.error(err);
@@ -136,6 +139,9 @@ export const Users = () => {
                 <div>
                     <h1 className="page-title">Gestão de Acessos</h1>
                     <p className="page-subtitle">Usuários e entidades autorizadas (RBAC).</p>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 500 }}>
+                        <Edit size={14} /> Clique em qualquer linha para editar o usuário.
+                    </div>
                 </div>
                 {!showForm && (
                     <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
@@ -244,7 +250,7 @@ export const Users = () => {
                             <th>E-mail</th>
                             <th>Perfil / Associação</th>
                             <th>Status</th>
-                            <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>Excluir</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -280,7 +286,7 @@ export const Users = () => {
                             </tr>
                         ) : users.length > 0 ? (
                             users.map((u, idx) => (
-                                <tr key={u.id || idx}>
+                                <tr key={u.id || idx} onClick={() => handleEdit(u)} style={{ cursor: 'pointer' }}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             {u.photoUrl ? (
@@ -305,15 +311,16 @@ export const Users = () => {
                                             {u.active ? 'Ativo' : 'Inativo'}
                                         </span>
                                     </td>
-                                    <td style={{ width: '100px' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                            <button onClick={() => handleEdit(u)} style={{ color: 'var(--brand-primary)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                                <Edit size={16} />
-                                            </button>
-                                            <button onClick={() => handleDelete(u.id, u.name)} style={{ color: 'var(--danger)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <button 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setConfirmDelete({ id: u.id, name: u.name }); 
+                                            }} 
+                                            style={{ color: 'var(--danger)', padding: '0.4rem', cursor: 'pointer', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </td>
                                 </tr>
                             ))
@@ -327,6 +334,38 @@ export const Users = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Custom Delete Confirmation Modal */}
+            {confirmDelete && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div className="glass-panel" style={{ padding: '2rem', maxWidth: '400px', width: '90%', textAlign: 'center' }}>
+                        <div style={{ color: 'var(--danger)', marginBottom: '1.5rem' }}>
+                            <Trash2 size={48} />
+                        </div>
+                        <h3 style={{ margin: '0 0 1rem' }}>Confirmar Exclusão</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                            Tem certeza que deseja remover o usuário <strong>{confirmDelete.name}</strong>? Esta ação não pode ser desfeita.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>
+                                Cancelar
+                            </button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                onClick={handleDelete}
+                            >
+                                Confirmar Exclusão
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

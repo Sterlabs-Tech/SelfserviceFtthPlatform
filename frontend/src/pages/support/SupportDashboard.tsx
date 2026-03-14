@@ -11,7 +11,6 @@ export const SupportDashboard = () => {
     const [showSearch, setShowSearch] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<any[] | null>(null);
-    const [modalStatus, setModalStatus] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     // Form states (kept from original)
@@ -26,8 +25,8 @@ export const SupportDashboard = () => {
 
     const loadQueue = () => {
         setIsLoading(true);
-        api.get('/api/orders')
-            .then(res => setOrders(res.data))
+        api.get('/api/orders?limit=1000')
+            .then(res => setOrders(res.data.data))
             .finally(() => setIsLoading(false));
     };
 
@@ -191,58 +190,6 @@ export const SupportDashboard = () => {
         setOrderState({});
     };
 
-    const formatDate = (d: string) => {
-        if (!d) return '-';
-        return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    };
-
-    const formatSLA = (targetDate: string | Date | null) => {
-        if (!targetDate) return { text: '-', emoji: '⚪', color: 'var(--text-secondary)' };
-        
-        const now = new Date();
-        const target = new Date(targetDate);
-        const diffMs = target.getTime() - now.getTime();
-        const isPastDue = diffMs < 0;
-        
-        const absDiff = Math.abs(diffMs);
-        const hours = Math.floor(absDiff / (1000 * 60 * 60));
-        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        let emoji = '🟢';
-        let color = '#10b981';
-
-        if (isPastDue) {
-            emoji = '🔥';
-            color = '#ef4444';
-        } else if (hours < 2) {
-            emoji = '🔴';
-            color = '#ef4444';
-        } else if (hours < 6) {
-            emoji = '🟡';
-            color = '#f59e0b';
-        }
-
-        return { 
-            text: `${isPastDue ? '-' : ''}${hours}h ${minutes}m`, 
-            emoji, 
-            color 
-        };
-    };
-
-    // Orders filtered by a given status (for modal)
-    const getOrdersByStatus = (status: string) => {
-        return orders
-            .filter(o => {
-                let s = o.status;
-                if (s === 'OPEN') s = 'AWAITING_DISPATCH';
-                return s === status;
-            })
-            .sort((a, b) => {
-                const dateA = a.slaTarget ? new Date(a.slaTarget).getTime() : Infinity;
-                const dateB = b.slaTarget ? new Date(b.slaTarget).getTime() : Infinity;
-                return dateA - dateB;
-            });
-    };
 
     return (
         <div>
@@ -251,6 +198,9 @@ export const SupportDashboard = () => {
                 <div>
                     <h1 className="page-title">Pedidos em Andamento</h1>
                     <p className="page-subtitle">Painel de controle e acompanhamento de pedidos.</p>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 500 }}>
+                        <Eye size={14} /> Clique em qualquer linha da tabela de status para ver o detalhamento dos pedidos.
+                    </div>
                 </div>
                 {isLoading && (
                     <div style={{ position: 'absolute', top: '10px', right: '0' }}>
@@ -299,9 +249,14 @@ export const SupportDashboard = () => {
 
                     {searchResults !== null && (
                         <div style={{ marginTop: '1.5rem' }}>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                                {searchResults.length} resultado(s) encontrado(s)
-                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                    {searchResults.length} resultado(s) encontrado(s)
+                                </p>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--brand-accent)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <Eye size={14} /> Clique em qualquer linha para ver detalhes
+                                </span>
+                            </div>
                             {searchResults.length > 0 && (
                                 <table className="data-table">
                                     <thead>
@@ -316,7 +271,7 @@ export const SupportDashboard = () => {
                                     </thead>
                                     <tbody>
                                         {searchResults.map(o => (
-                                            <tr key={o.id}>
+                                            <tr key={o.id} onClick={() => navigate(`/admin/orders/${o.id}`)} style={{ cursor: 'pointer' }}>
                                                 <td><strong>{o.externalId || '-'}</strong></td>
                                                 <td>{o.tenant?.name || '-'}</td>
                                                 <td>{o.customerName}</td>
@@ -326,7 +281,7 @@ export const SupportDashboard = () => {
                                                         {getStatusLabel(o.status)}
                                                     </span>
                                                 </td>
-                                                <td style={{ fontSize: '0.8rem' }}>{formatDate(o.createdAt)}</td>
+                                                <td style={{ fontSize: '0.8rem' }}>{new Date(o.createdAt).toLocaleString('pt-BR')}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -468,7 +423,6 @@ export const SupportDashboard = () => {
                     <div style={{ textAlign: 'right' }}>Qtd.</div>
                     <div>Percentual</div>
                     <div style={{ textAlign: 'right' }}>%</div>
-                    <div style={{ textAlign: 'center' }}>Ações</div>
                 </div>
 
                 {pipelineData.length === 0 && (
@@ -478,7 +432,12 @@ export const SupportDashboard = () => {
                 )}
 
                 {pipelineData.map((row, idx) => (
-                    <div className="drilldown-row" key={row.status}>
+                    <div 
+                        className="drilldown-row" 
+                        key={row.status} 
+                        onClick={() => navigate(`/admin/orders/status/${row.status}`)}
+                        style={{ cursor: 'pointer' }}
+                    >
                         <div className="drilldown-num">{idx + 1}</div>
                         <div>
                             <span className="status-badge-pill" style={{ background: row.color }}>
@@ -490,11 +449,6 @@ export const SupportDashboard = () => {
                             <div className="bar-fill" style={{ width: `${row.pct}%`, background: row.color }} />
                         </div>
                         <div className="drilldown-pct">{row.pct.toFixed(2)}%</div>
-                        <div className="drilldown-action">
-                            <button onClick={() => setModalStatus(row.status)} title="Ver pedidos neste status">
-                                <Eye size={14} />
-                            </button>
-                        </div>
                     </div>
                 ))}
             </div>
@@ -561,83 +515,6 @@ export const SupportDashboard = () => {
                     </div>
                 )}
             </div>
-
-            {/* ── STATUS DETAIL MODAL ── */}
-            {modalStatus && (
-                <div className="modal-overlay" onClick={() => setModalStatus(null)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <span className="status-badge-pill" style={{ background: STATUS_COLORS[modalStatus] || '#6b7280' }}>
-                                    {getStatusLabel(modalStatus)}
-                                </span>
-                                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                    {getOrdersByStatus(modalStatus).length} pedido(s)
-                                </span>
-                            </div>
-                            <button className="modal-close" onClick={() => setModalStatus(null)}>
-                                <X size={22} />
-                            </button>
-                        </div>
-                        <div style={{ padding: '0' }}>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>OS</th>
-                                        <th>SLA / Risco</th>
-                                        <th>Tenant</th>
-                                        <th>Cliente</th>
-                                        <th>Endereço</th>
-                                        <th>Operador</th>
-                                        <th style={{ textAlign: 'center' }}>Detalhes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {getOrdersByStatus(modalStatus).map(o => (
-                                        <tr key={o.id}>
-                                            <td><strong>{o.externalId || '-'}</strong></td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span style={{ fontSize: '1.2rem' }}>{formatSLA(o.slaTarget).emoji}</span>
-                                                    <span style={{ fontWeight: 600, color: formatSLA(o.slaTarget).color, whiteSpace: 'nowrap' }}>
-                                                        {formatSLA(o.slaTarget).text}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-sm)', background: '#fff', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                    {o.tenant?.logoUrl ? (
-                                                        <img src={o.tenant.logoUrl} alt={o.tenant.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                                    ) : (
-                                                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{o.tenant?.name?.substring(0, 3)}</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>{o.customerName}</td>
-                                            <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{o.customerAddress}</td>
-                                            <td>{o.operator?.name || '-'}</td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <button 
-                                                    onClick={() => navigate(`/admin/orders/${o.id}`)}
-                                                    className="btn-secondary"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                                >
-                                                    Ver Detalhes
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {getOrdersByStatus(modalStatus).length === 0 && (
-                                        <tr>
-                                            <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>Nenhum pedido encontrado.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
