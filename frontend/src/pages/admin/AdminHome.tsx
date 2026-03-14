@@ -67,14 +67,25 @@ export const AdminHome = () => {
 
     return (
         <div>
-            <div className="page-header">
+            <div className="page-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 className="page-title">Dashboard Operacional</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                         Bem-vindo, <strong>{user?.name || 'Admin'}</strong>. Indicadores de performance da plataforma.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    gap: '0.5rem', 
+                    alignItems: 'center', 
+                    fontSize: '0.85rem', 
+                    color: 'var(--text-secondary)', 
+                    background: 'var(--bg-primary)', 
+                    padding: '0.5rem 1rem', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid var(--border-color)',
+                    whiteSpace: 'nowrap'
+                }}>
                     <Calendar size={16} />
                     Último log: {new Date().toLocaleDateString('pt-BR')}
                 </div>
@@ -111,7 +122,7 @@ export const AdminHome = () => {
             </div>
 
             {/* Main Charts Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="grid-2-1" style={{ marginBottom: '2rem' }}>
                 {/* 30 Day Daily Orders */}
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -163,7 +174,7 @@ export const AdminHome = () => {
             </div>
 
             {/* Maps Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="grid-1-1">
                 {/* Demand Heatmap */}
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

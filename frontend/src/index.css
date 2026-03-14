@@ -220,6 +220,25 @@ button {
   background: var(--bg-accent);
 }
 
+/* Responsive Grid Infrastructure */
+.grid-2-1 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.5rem;
+}
+
+.grid-1-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .grid-2-1, .grid-1-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Badges */
 .badge {
   display: inline-flex;
@@ -743,6 +762,11 @@ button {
 
   .data-table th, .data-table td {
     padding: 0.5rem;
+  }
+
+  /* Responsive Grid Utilities */
+  .grid-resp {
+    grid-template-columns: 1fr !important;
   }
 }
 
