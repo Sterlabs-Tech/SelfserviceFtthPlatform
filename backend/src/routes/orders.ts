@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { checkRepairEligibility } from './eligibility';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // REQC01 - Serviço de Abertura Ordens de Auto Troca de ONT
 /**

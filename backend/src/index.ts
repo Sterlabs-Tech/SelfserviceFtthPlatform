@@ -1,14 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import prisma from './lib/prisma';
 
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -41,7 +41,6 @@ app.use((req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// Trivial comment to trigger reload - 03:44 FIX MISSING COUNT
 // Start server
 app.listen(port, () => {
   console.log(`Backend server listening at http://localhost:${port}`);

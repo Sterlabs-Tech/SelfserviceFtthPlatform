@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
-import { Truck, X, Edit, Trash2, MapPin } from 'lucide-react';
+import { Truck, X, MapPin, Eye } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const UF_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+const UF_OPTIONS: any[] = [];
 
 export const Logistics = () => {
+    const navigate = useNavigate();
     const [ops, setOps] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         active: true,
         slaHours: 24,
-        businessHours: '08:00 às 18:00',
+        businessStart: '08:00',
+        businessEnd: '18:00',
+        workSaturdays: false,
+        workSundays: false,
+        workHolidays: false,
         regions: '',
         zipCode: '',
         street: '',
@@ -22,49 +29,72 @@ export const Logistics = () => {
         city: '',
         state: ''
     });
+    const [municipalities, setMunicipalities] = useState<string[]>([]);
+    const [isLoadingMuni, setIsLoadingMuni] = useState(false);
 
     const emptyForm = {
-        name: '', active: true, slaHours: 24, businessHours: '08:00 às 18:00', regions: '',
+        name: '', active: true, slaHours: 24, 
+        businessStart: '08:00', businessEnd: '18:00',
+        workSaturdays: false, workSundays: false, workHolidays: false,
+        regions: '',
         zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: ''
     };
 
-    const loadOps = () => {
-        api.get('/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
-    };
-
-    useEffect(() => {
-        loadOps();
-    }, []);
-
-    const handleEdit = (op: any) => {
-        setFormData({
-            name: op.name,
-            active: op.active,
-            slaHours: op.slaHours,
-            businessHours: op.businessHours,
-            regions: op.regions,
-            zipCode: op.zipCode || '',
-            street: op.street || '',
-            number: op.number || '',
-            complement: op.complement || '',
-            neighborhood: op.neighborhood || '',
-            city: op.city || '',
-            state: op.state || ''
-        });
-        setEditingId(op.id);
-        setShowForm(true);
-    };
-
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Tem certeza que deseja excluir o operador ${name}?`)) return;
+    const loadData = async () => {
+        setIsLoading(true);
         try {
-            await api.delete(`/api/logistics/${id}`);
-            loadOps();
-        } catch (err) {
-            console.error(err);
-            alert('Erro ao excluir operador logístico.');
+            const res = await api.get('/api/logistics');
+            setOps(res.data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
         }
     };
+
+    const fetchMunicipalities = async (uf: string) => {
+        if (!uf || uf.length !== 2) return;
+        setIsLoadingMuni(true);
+        try {
+            const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+            const data = await response.json();
+            setMunicipalities(data.map((m: any) => m.nome).sort());
+        } catch (err) {
+            console.error('Erro ao buscar municípios:', err);
+        } finally {
+            setIsLoadingMuni(false);
+        }
+    };
+
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    useEffect(() => {
+        const editId = searchParams.get('edit');
+        if (editId && ops.length > 0) {
+            const opToEdit = ops.find(o => o.id === editId);
+            if (opToEdit) {
+                setEditingId(editId);
+                setFormData({
+                    ...opToEdit,
+                    slaHours: opToEdit.slaHours || 24,
+                    active: Boolean(opToEdit.active)
+                });
+                setShowForm(true);
+                // Clear the param after handling it
+                setSearchParams({}, { replace: true });
+            }
+        }
+    }, [searchParams, ops]);
+
+    useEffect(() => {
+        if (showForm && formData.state && formData.state.length === 2) {
+            fetchMunicipalities(formData.state);
+        }
+    }, [formData.state, showForm]);
 
     const handleCepBlur = async () => {
         const cep = formData.zipCode.replace(/\D/g, '');
@@ -103,7 +133,7 @@ export const Logistics = () => {
             setShowForm(false);
             setEditingId(null);
             setFormData(emptyForm);
-            loadOps();
+            loadData();
         } catch (err) {
             console.error(err);
             alert('Erro ao salvar operador.');
@@ -154,8 +184,28 @@ export const Logistics = () => {
                             <input type="number" className="input-field" value={formData.slaHours} onChange={e => setFormData({ ...formData, slaHours: Number(e.target.value) })} required min="1" />
                         </div>
                         <div className="input-group">
-                            <label className="input-label">Horário Útil</label>
-                            <input className="input-field" value={formData.businessHours} onChange={e => setFormData({ ...formData, businessHours: e.target.value })} required placeholder="Ex: 08:00 às 18:00" />
+                            <label className="input-label">Horário de Funcionamento</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input type="time" className="input-field" value={formData.businessStart} onChange={e => setFormData({ ...formData, businessStart: e.target.value })} required />
+                                <span style={{ color: 'var(--text-secondary)' }}>até</span>
+                                <input type="time" className="input-field" value={formData.businessEnd} onChange={e => setFormData({ ...formData, businessEnd: e.target.value })} required />
+                            </div>
+                        </div>
+
+                        {/* Working Days Flags */}
+                        <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                            <label className="input-label">Dias de Funcionamento</label>
+                            <div style={{ display: 'flex', gap: '2rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={formData.workSaturdays} onChange={e => setFormData({ ...formData, workSaturdays: e.target.checked })} /> Sábados
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={formData.workSundays} onChange={e => setFormData({ ...formData, workSundays: e.target.checked })} /> Domingos
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={formData.workHolidays} onChange={e => setFormData({ ...formData, workHolidays: e.target.checked })} /> Feriados
+                                </label>
+                            </div>
                         </div>
 
                         {/* Address Section */}
@@ -208,43 +258,66 @@ export const Logistics = () => {
                             </div>
                         </div>
 
-                        {/* Regions */}
+                        {/* Regions (Municipalities) */}
                         <div className="input-group" style={{ gridColumn: 'span 2' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                                <label className="input-label" style={{ marginBottom: 0 }}>Regiões Atendidas (UFs)</label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const currentUfs = formData.regions ? formData.regions.split(',').filter(Boolean) : [];
-                                        if (currentUfs.length === UF_OPTIONS.length) {
-                                            setFormData({ ...formData, regions: '' });
-                                        } else {
-                                            setFormData({ ...formData, regions: UF_OPTIONS.join(',') });
-                                        }
-                                    }}
-                                    style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }}
-                                >
-                                    {formData.regions && formData.regions.split(',').filter(Boolean).length === UF_OPTIONS.length ? 'Desmarcar Todas' : 'Marcar Todas'}
-                                </button>
+                                <label className="input-label" style={{ marginBottom: 0 }}>
+                                    Municípios Atendidos (UF: {formData.state || '-'})
+                                </label>
+                                {municipalities.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const currentMunis = formData.regions ? formData.regions.split(',').filter(Boolean) : [];
+                                            if (currentMunis.length === municipalities.length) {
+                                                setFormData({ ...formData, regions: '' });
+                                            } else {
+                                                setFormData({ ...formData, regions: municipalities.join(',') });
+                                            }
+                                        }}
+                                        style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }}
+                                    >
+                                        {formData.regions && formData.regions.split(',').filter(Boolean).length === municipalities.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+                                    </button>
+                                )}
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', padding: '1rem', border: '1px solid var(--border-color)' }}>
-                                {UF_OPTIONS.map(uf => (
-                                    <label key={uf} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer', width: '55px' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.regions.includes(uf)}
-                                            onChange={e => {
-                                                let ufs = formData.regions ? formData.regions.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                                if (e.target.checked) ufs.push(uf);
-                                                else ufs = ufs.filter(s => s !== uf);
-                                                setFormData({ ...formData, regions: ufs.join(',') });
-                                            }}
-                                            style={{ width: '16px', height: '16px', accentColor: '#000000' }}
-                                        />
-                                        {uf}
-                                    </label>
-                                ))}
-                            </div>
+                            
+                            {!formData.state ? (
+                                <div style={{ padding: '1rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Informe o CEP para carregar a UF e os municípios disponíveis.
+                                </div>
+                            ) : isLoadingMuni ? (
+                                <div style={{ padding: '1rem', textAlign: 'center' }}>Carregando municípios...</div>
+                            ) : (
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                                    gap: '0.5rem', 
+                                    background: 'var(--bg-primary)', 
+                                    borderRadius: 'var(--radius-md)', 
+                                    padding: '1rem', 
+                                    border: '1px solid var(--border-color)',
+                                    maxHeight: '200px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {municipalities.map(muni => (
+                                        <label key={muni} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.regions.split(',').includes(muni)}
+                                                onChange={e => {
+                                                    let munis = formData.regions ? formData.regions.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                                    if (e.target.checked) munis.push(muni);
+                                                    else munis = munis.filter(s => s !== muni);
+                                                    setFormData({ ...formData, regions: munis.join(',') });
+                                                }}
+                                                style={{ width: '14px', height: '14px', accentColor: '#000000' }}
+                                            />
+                                            {muni}
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Buttons */}
@@ -262,39 +335,70 @@ export const Logistics = () => {
                         <tr>
                             <th>Operador</th>
                             <th>Status</th>
-                            <th>SLA (horas)</th>
-                            <th>Horário Útil</th>
-                            <th>Endereço</th>
-                            <th>Regiões Atendidas</th>
-                            <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
+                            <th>SLA</th>
+                            <th>UF</th>
+                            <th>Municípios Atendidos</th>
+                            <th style={{ width: '100px', textAlign: 'center' }}>Detalhes</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {ops.map((o, idx) => (
-                            <tr key={idx}>
-                                <td>{o.name}</td>
-                                <td>
-                                    <span className={`badge ${o.active ? 'badge-success' : 'badge-danger'}`}>
-                                        {o.active ? 'Habilitado' : 'Desabilitado'}
-                                    </span>
-                                </td>
-                                <td>{o.slaHours}h</td>
-                                <td>{o.businessHours}</td>
-                                <td style={{ fontSize: '0.8rem', maxWidth: '200px' }}>
-                                    {o.city && o.state ? `${o.city}/${o.state}` : '-'}
-                                </td>
-                                <td>{o.regions}</td>
-                                <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                    <button onClick={() => handleEdit(o)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(o.id, o.name)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
-                                        <Trash2 size={16} />
-                                    </button>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                                        <svg width="60" height="60" viewBox="0 0 100 100" className="fidget-spinner">
+                                            <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                                            <g fill="var(--brand-primary)">
+                                                <circle cx="50" cy="20" r="15" />
+                                                <rect x="42" y="20" width="16" height="30" />
+                                                <circle cx="24" cy="65" r="15" />
+                                                <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                                <circle cx="76" cy="65" r="15" />
+                                                <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                            </g>
+                                            <circle cx="50" cy="20" r="5" fill="#333" />
+                                            <circle cx="24" cy="65" r="5" fill="#333" />
+                                            <circle cx="76" cy="65" r="5" fill="#333" />
+                                        </svg>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.1rem', display: 'block' }}>Localizando parceiros...</span>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Carregando malha logística</span>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
-                        {ops.length === 0 && (
+                        ) : ops.length > 0 ? (
+                            ops.map((o, idx) => (
+                                <tr key={idx}>
+                                    <td>{o.name}</td>
+                                    <td>
+                                        <span className={`badge ${o.active ? 'badge-success' : 'badge-danger'}`}>
+                                            {o.active ? 'Habilitado' : 'Desabilitado'}
+                                        </span>
+                                    </td>
+                                    <td>{o.slaHours}h</td>
+                                    <td>{o.state || '-'}</td>
+                                    <td>
+                                        <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '0.5rem 0' }}>
+                                            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                {o.regions ? o.regions.split(',').map((m: string, i: number) => (
+                                                    <li key={i} style={{ marginBottom: '2px' }}>{m.trim()}</li>
+                                                )) : <li>Nenhum município</li>}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                        <button 
+                                            onClick={() => navigate(`/admin/logistics/${o.id}`)} 
+                                            style={{ color: 'var(--brand-primary)', padding: '0.4rem', background: 'rgba(255, 217, 25, 0.1)', borderRadius: '8px', display: 'inline-flex' }} 
+                                            title="Visualizar Detalhes"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
                             <tr>
                                 <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Nenhum Operador cadastrado.

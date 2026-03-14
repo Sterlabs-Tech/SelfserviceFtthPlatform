@@ -28,7 +28,11 @@ export async function checkRepairEligibility(subscriberId: string, tenantId: str
     return {
         eligible: true,
         slaEstimationHours: activeOperator.slaHours || 24,
-        businessHours: activeOperator.businessHours || "08:00-18:00",
+        businessStart: activeOperator.businessStart || "08:00",
+        businessEnd: activeOperator.businessEnd || "18:00",
+        workSaturdays: activeOperator.workSaturdays,
+        workSundays: activeOperator.workSundays,
+        workHolidays: activeOperator.workHolidays,
         designatedOperatorId: activeOperator.id,
         designatedOperatorName: "Rapidão do RJ",
         compatibleOntStock: 100,

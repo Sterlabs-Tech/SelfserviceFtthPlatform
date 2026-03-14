@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // REQD01 - Fila do Operador Logístico
 router.get('/operator/queue/:operatorId', async (req, res) => {

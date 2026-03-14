@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import eligibilityRoutes from './eligibility';
 import orderRoutes from './orders';
 import logisticsPortalRoutes from './logistics-portal';
 import dashboardRoutes from './dashboard';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * @openapi
@@ -130,20 +129,108 @@ router.delete('/tenants/:id', async (req, res) => {
     }
 });
 
-// REQA01 - Logistics Operators
+// REQA01 - Logistics Operators - DETAILS MUST BE BEFORE PARAMETERIZED DELETE/PUT
+router.get('/logistics/:id/details', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const operator = await prisma.logisticsOperator.findUnique({
+            where: { id },
+            include: {
+                users: {
+                    select: { id: true, name: true, email: true, profile: true, active: true }
+                },
+                _count: {
+                    select: { orders: true, users: true }
+                }
+            }
+        });
+
+        if (!operator) return res.status(404).json({ error: 'Operator not found' });
+
+        const now = new Date();
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(now.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+
+        const orders = await prisma.order.findMany({
+            where: {
+                logisticsOperatorId: id,
+                createdAt: { gte: sixMonthsAgo }
+            },
+            select: {
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+                slaTarget: true,
+                status: true
+            }
+        });
+
+        const performance: Record<string, { month: string, success: number, risk: number, delayed: number }> = {};
+        for (let i = 0; i < 6; i++) {
+            const d = new Date();
+            d.setMonth(now.getMonth() - i);
+            const monthKey = d.toISOString().slice(0, 7);
+            performance[monthKey] = {
+                month: d.toLocaleString('pt-BR', { month: 'short' }).replace('.', ''),
+                success: 0,
+                risk: 0,
+                delayed: 0
+            };
+        }
+
+        orders.forEach(o => {
+            const monthKey = o.createdAt.toISOString().slice(0, 7);
+            if (performance[monthKey]) {
+                const isFinished = o.status === 'FINISHED' || o.status === 'COMPLETED';
+                const finishTime = isFinished ? o.updatedAt : now;
+                if (isFinished) {
+                    if (o.slaTarget && finishTime <= o.slaTarget) performance[monthKey].success++;
+                    else performance[monthKey].delayed++;
+                } else {
+                    if (o.slaTarget) {
+                        if (now > o.slaTarget) performance[monthKey].delayed++;
+                        else if ((o.slaTarget.getTime() - now.getTime()) < 6 * 3600 * 1000) performance[monthKey].risk++;
+                        else performance[monthKey].success++;
+                    } else performance[monthKey].success++;
+                }
+            }
+        });
+
+        const sortedPerformance = Object.entries(performance)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(e => e[1]);
+
+        res.json({
+            operator,
+            deliverers: operator.users,
+            totalDeliveries: operator._count.orders,
+            performance: sortedPerformance
+        });
+    } catch (e: any) {
+        console.error('Error fetching operator details:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.get('/logistics', async (req, res) => {
     const ops = await prisma.logisticsOperator.findMany();
     res.json(ops);
 });
 router.post('/logistics', async (req, res) => {
-    const { name, active, regions, slaHours, businessHours, zipCode, street, number, complement, neighborhood, city, state } = req.body;
+    const { name, active, regions, slaHours, businessStart, businessEnd, workSaturdays, workSundays, workHolidays, zipCode, street, number, complement, neighborhood, city, state } = req.body;
     const op = await prisma.logisticsOperator.create({
         data: { 
             name, 
             active: Boolean(active), 
             regions, 
             slaHours: Number(slaHours), 
-            businessHours,
+            businessStart: businessStart || "08:00",
+            businessEnd: businessEnd || "18:00",
+            workSaturdays: Boolean(workSaturdays),
+            workSundays: Boolean(workSundays),
+            workHolidays: Boolean(workHolidays),
             zipCode,
             street,
             number,
@@ -158,13 +245,17 @@ router.post('/logistics', async (req, res) => {
 router.put('/logistics/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { active, slaHours, businessHours, regions, name, zipCode, street, number, complement, neighborhood, city, state } = req.body;
+        const { active, slaHours, businessStart, businessEnd, workSaturdays, workSundays, workHolidays, regions, name, zipCode, street, number, complement, neighborhood, city, state } = req.body;
         const op = await prisma.logisticsOperator.update({
             where: { id },
             data: { 
                 active: Boolean(active), 
                 slaHours: Number(slaHours), 
-                businessHours, 
+                businessStart, 
+                businessEnd,
+                workSaturdays: Boolean(workSaturdays),
+                workSundays: Boolean(workSundays),
+                workHolidays: Boolean(workHolidays),
                 regions, 
                 name,
                 zipCode,
@@ -197,25 +288,26 @@ router.delete('/logistics/:id', async (req, res) => {
     }
 });
 
+
 // REQA03 - Stock
 router.get('/stock', async (req, res) => {
     const stock = await prisma.stock.findMany({ include: { operator: true } });
     res.json(stock);
 });
 router.post('/stock', async (req, res) => {
-    const { operatorId, region, modelCode, manufacturer, quantity } = req.body;
+    const { operatorId, region, modelCode, manufacturer, quantity, tipo } = req.body;
     const stock = await prisma.stock.create({
-        data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity) }
+        data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
     });
     res.json(stock);
 });
 router.put('/stock/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { operatorId, region, modelCode, manufacturer, quantity } = req.body;
+        const { operatorId, region, modelCode, manufacturer, quantity, tipo } = req.body;
         const stock = await prisma.stock.update({
             where: { id },
-            data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity) }
+            data: { operatorId, region, modelCode, manufacturer, quantity: Number(quantity), tipo: tipo || "ONT" }
         });
         res.json(stock);
     } catch (e: any) {

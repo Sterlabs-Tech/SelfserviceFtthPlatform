@@ -12,6 +12,7 @@ export const SupportDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<any[] | null>(null);
     const [modalStatus, setModalStatus] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Form states (kept from original)
     const [tenants, setTenants] = useState<any[]>([]);
@@ -24,7 +25,10 @@ export const SupportDashboard = () => {
     const [orderState, setOrderState] = useState<{ loading?: boolean, success?: boolean, msg?: string }>({});
 
     const loadQueue = () => {
-        api.get('/api/orders').then(res => setOrders(res.data));
+        setIsLoading(true);
+        api.get('/api/orders')
+            .then(res => setOrders(res.data))
+            .finally(() => setIsLoading(false));
     };
 
     useEffect(() => {
@@ -243,11 +247,29 @@ export const SupportDashboard = () => {
     return (
         <div>
             {/* ── HEADER ── */}
-            <div className="page-header">
+            <div className="page-header" style={{ position: 'relative' }}>
                 <div>
                     <h1 className="page-title">Pedidos em Andamento</h1>
                     <p className="page-subtitle">Painel de controle e acompanhamento de pedidos.</p>
                 </div>
+                {isLoading && (
+                    <div style={{ position: 'absolute', top: '10px', right: '0' }}>
+                        <svg width="40" height="40" viewBox="0 0 100 100" className="fidget-spinner">
+                            <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                            <g fill="var(--brand-primary)">
+                                <circle cx="50" cy="20" r="15" />
+                                <rect x="42" y="20" width="16" height="30" />
+                                <circle cx="24" cy="65" r="15" />
+                                <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                <circle cx="76" cy="65" r="15" />
+                                <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                            </g>
+                            <circle cx="50" cy="20" r="5" fill="#333" />
+                            <circle cx="24" cy="65" r="5" fill="#333" />
+                            <circle cx="76" cy="65" r="5" fill="#333" />
+                        </svg>
+                    </div>
+                )}
             </div>
 
             {/* ── SEARCH PANEL ── */}

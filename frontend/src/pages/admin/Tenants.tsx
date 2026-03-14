@@ -12,6 +12,7 @@ const UF_OPTIONS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
 
 export const Tenants = () => {
     const [tenants, setTenants] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -22,12 +23,20 @@ export const Tenants = () => {
         logoUrl: '' as string | null
     });
 
-    const loadTenants = () => {
-        api.get('/api/tenants').then(res => setTenants(res.data)).catch(e => console.error(e));
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.get('/api/tenants');
+            setTenants(res.data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
-        loadTenants();
+        loadData();
     }, []);
 
     const handleEdit = (tenant: any) => {
@@ -46,7 +55,7 @@ export const Tenants = () => {
         if (!confirm(`Tem certeza que deseja excluir a tenant ${name}?`)) return;
         try {
             await api.delete(`/api/tenants/${id}`);
-            loadTenants();
+            loadData();
         } catch (err) {
             console.error(err);
             alert('Erro ao excluir Tenant.');
@@ -64,7 +73,7 @@ export const Tenants = () => {
             setShowForm(false);
             setEditingId(null);
             setFormData({ name: '', active: true, allowedServices: 'REPAIR', allowedUFs: 'SP,RJ', logoUrl: '' });
-            loadTenants();
+            loadData();
         } catch (err) {
             console.error(err);
             alert('Erro ao salvar Tenant.');
@@ -217,48 +226,72 @@ export const Tenants = () => {
                             <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {tenants.map((t, idx) => (
-                            <tr key={idx}>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        {t.logoUrl ? (
-                                            <div style={{ width: '36px', height: '36px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                <img src={t.logoUrl} alt={t.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                            </div>
-                                        ) : (
-                                            <div style={{ width: '36px', height: '36px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-accent)', color: 'var(--text-secondary)', fontSize: '0.65rem', textAlign: 'center', lineHeight: 1 }}>
-                                                Sem<br />Logo
-                                            </div>
-                                        )}
-                                        <span style={{ fontWeight: 500 }}>{t.name}</span>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                                        <svg width="60" height="60" viewBox="0 0 100 100" className="fidget-spinner">
+                                            <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                                            <g fill="var(--brand-primary)">
+                                                <circle cx="50" cy="20" r="15" />
+                                                <rect x="42" y="20" width="16" height="30" />
+                                                <circle cx="24" cy="65" r="15" />
+                                                <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                                <circle cx="76" cy="65" r="15" />
+                                                <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                            </g>
+                                            <circle cx="50" cy="20" r="5" fill="#333" />
+                                            <circle cx="24" cy="65" r="5" fill="#333" />
+                                            <circle cx="76" cy="65" r="5" fill="#333" />
+                                        </svg>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.1rem', display: 'block' }}>Configurando acessos...</span>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Carregando tenants habilitadas</span>
+                                        </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <span className={`badge ${t.active ? 'badge-success' : 'badge-danger'}`}>
-                                        {t.active ? 'Ativo' : 'Inativo'}
-                                    </span>
-                                </td>
-                                <td>{t.allowedServices}</td>
-                                <td>{t.allowedUFs}</td>
-                                <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                    <button onClick={() => handleEdit(t)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(t.id, t.name)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                </td>
                             </tr>
-                        ))}
-                        {tenants.length === 0 && (
+                        ) : tenants.length > 0 ? (
+                            tenants.map((t, idx) => (
+                                <tr key={idx}>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            {t.logoUrl ? (
+                                                <div style={{ width: '36px', height: '36px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                    <img src={t.logoUrl} alt={t.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                                </div>
+                                            ) : (
+                                                <div style={{ width: '36px', height: '36px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-accent)', color: 'var(--text-secondary)', fontSize: '0.65rem', textAlign: 'center', lineHeight: 1 }}>
+                                                    Sem<br />Logo
+                                                </div>
+                                            )}
+                                            <span style={{ fontWeight: 500 }}>{t.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${t.active ? 'badge-success' : 'badge-danger'}`}>
+                                            {t.active ? 'Ativo' : 'Inativo'}
+                                        </span>
+                                    </td>
+                                    <td>{t.allowedServices}</td>
+                                    <td>{t.allowedUFs}</td>
+                                    <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <button onClick={() => handleEdit(t)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(t.id, t.name)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
                             <tr>
                                 <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Nenhum Tenant cadastrado.
                                 </td>
                             </tr>
                         )}
-                    </tbody>
                 </table>
             </div>
         </div>

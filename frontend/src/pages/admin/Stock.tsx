@@ -5,6 +5,7 @@ import { PackagePlus, X, Edit, Trash2 } from 'lucide-react';
 export const Stock = () => {
     const [stock, setStock] = useState<any[]>([]);
     const [ops, setOps] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -16,17 +17,24 @@ export const Stock = () => {
         quantity: 0
     });
 
-    const loadStock = () => {
-        api.get('/api/stock').then(res => setStock(res.data)).catch(e => console.error(e));
-    };
-
-    const loadOps = () => {
-        api.get('/api/logistics').then(res => setOps(res.data)).catch(e => console.error(e));
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            const [stockRes, opsRes] = await Promise.all([
+                api.get('/api/stock'),
+                api.get('/api/logistics')
+            ]);
+            setStock(stockRes.data);
+            setOps(opsRes.data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
-        loadStock();
-        loadOps();
+        loadData();
     }, []);
 
     const handleEdit = (item: any) => {
@@ -46,7 +54,7 @@ export const Stock = () => {
         if (!confirm(`Tem certeza que deseja diminuir o estoque do modelo ${code}?`)) return;
         try {
             await api.delete(`/api/stock/${id}`);
-            loadStock();
+            loadData();
         } catch (err) {
             console.error(err);
             alert('Erro ao retirar estoque.');
@@ -68,7 +76,7 @@ export const Stock = () => {
             setShowForm(false);
             setEditingId(null);
             setFormData({ operatorId: ops[0]?.id || '', region: 'SP', tipo: 'ONT', manufacturer: '', modelCode: '', quantity: 0 });
-            loadStock();
+            loadData();
         } catch (err) {
             console.error(err);
             alert('Erro ao salvar estoque.');
@@ -119,15 +127,20 @@ export const Stock = () => {
                             </select>
                         </div>
                         <div className="input-group">
-                            <label className="input-label">Região Atendida (UF)</label>
+                            <label className="input-label">Região Atendida (Município)</label>
                             <select className="input-field" value={formData.region} onChange={e => setFormData({ ...formData, region: e.target.value })} required disabled={!formData.operatorId}>
                                 {(() => {
                                     const selectedOp = ops.find(o => o.id === formData.operatorId);
                                     if (!selectedOp || !selectedOp.regions) return <option value="" disabled>Selecione um operador primeiro</option>;
-                                    const opUFs = selectedOp.regions.split(',').map((r: string) => r.trim()).filter(Boolean);
-                                    return opUFs.map((uf: string) => (
-                                        <option key={uf} value={uf}>{uf} (Atendido)</option>
-                                    ));
+                                    const opMunis = selectedOp.regions.split(',').map((r: string) => r.trim()).filter(Boolean);
+                                    return (
+                                        <>
+                                            <option value="" disabled>Selecione um município</option>
+                                            {opMunis.map((muni: string) => (
+                                                <option key={muni} value={muni}>{muni}</option>
+                                            ))}
+                                        </>
+                                    );
                                 })()}
                             </select>
                         </div>
@@ -135,6 +148,7 @@ export const Stock = () => {
                             <label className="input-label">Tipo</label>
                             <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })} required>
                                 <option value="ONT">ONT</option>
+                                <option value="MESH">MESH</option>
                             </select>
                         </div>
                         <div className="input-group">
@@ -170,37 +184,61 @@ export const Stock = () => {
                             <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {stock.map((s, idx) => (
-                            <tr key={idx}>
-                                <td>{s.operator?.name || 'V.tal (Sede)'}</td>
-                                <td>{s.region}</td>
-                                <td>{s.tipo || 'ONT'}</td>
-                                <td>{s.manufacturer}</td>
-                                <td>{s.modelCode}</td>
-                                <td>
-                                    <span className={`badge ${s.quantity > 0 ? 'badge-success' : 'badge-danger'}`}>
-                                        {s.quantity} em estoque
-                                    </span>
-                                </td>
-                                <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                    <button onClick={() => handleEdit(s)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(s.id, s.modelCode)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
-                                        <Trash2 size={16} />
-                                    </button>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                                        <svg width="60" height="60" viewBox="0 0 100 100" className="fidget-spinner">
+                                            <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                                            <g fill="var(--brand-primary)">
+                                                <circle cx="50" cy="20" r="15" />
+                                                <rect x="42" y="20" width="16" height="30" />
+                                                <circle cx="24" cy="65" r="15" />
+                                                <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                                <circle cx="76" cy="65" r="15" />
+                                                <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                            </g>
+                                            <circle cx="50" cy="20" r="5" fill="#333" />
+                                            <circle cx="24" cy="65" r="5" fill="#333" />
+                                            <circle cx="76" cy="65" r="5" fill="#333" />
+                                        </svg>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.1rem', display: 'block' }}>Consultando inventário...</span>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Aguarde enquanto carregamos o estoque regional</span>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
-                        {stock.length === 0 && (
+                        ) : stock.length > 0 ? (
+                            stock.map((s, idx) => (
+                                <tr key={idx}>
+                                    <td>{s.operator?.name || 'V.tal (Sede)'}</td>
+                                    <td>{s.region}</td>
+                                    <td>{s.tipo || 'ONT'}</td>
+                                    <td>{s.manufacturer}</td>
+                                    <td>{s.modelCode}</td>
+                                    <td>
+                                        <span className={`badge ${s.quantity > 0 ? 'badge-success' : 'badge-danger'}`}>
+                                            {s.quantity} em estoque
+                                        </span>
+                                    </td>
+                                    <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <button onClick={() => handleEdit(s)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(s.id, s.modelCode)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
                             <tr>
                                 <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                                     Estoque vazio ou não cadastrado.
                                 </td>
                             </tr>
                         )}
-                    </tbody>
                 </table>
             </div>
         </div>

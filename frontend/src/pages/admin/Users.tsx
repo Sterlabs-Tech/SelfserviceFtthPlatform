@@ -8,6 +8,7 @@ export const Users = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [tenants, setTenants] = useState<any[]>([]);
     const [ops, setOps] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export const Users = () => {
     });
 
     const loadData = async () => {
+        setIsLoading(true);
         try {
             const [uRes, tRes, oRes] = await Promise.all([
                 api.get('/api/users'),
@@ -36,6 +38,8 @@ export const Users = () => {
             setOps(oRes.data);
         } catch (e) {
             console.error(e);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -244,48 +248,79 @@ export const Users = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((u, idx) => (
-                            <tr key={u.id || idx}>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        {u.photoUrl ? (
-                                            <img src={u.photoUrl} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                                                {u.name.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        <strong style={{ fontWeight: 500 }}>{u.name}</strong>
-                                    </div>
-                                </td>
-                                <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
-                                <td>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{u.profile.replace('_', ' ')}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                        {u.tenant?.name || u.logisticsOperator?.name || 'V.tal (Interno)'}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'}`}>
-                                        {u.active ? 'Ativo' : 'Inativo'}
-                                    </span>
-                                </td>
-                                <td style={{ width: '100px' }}>
-                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                        <button onClick={() => handleEdit(u)} style={{ color: 'var(--brand-primary)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(u.id, u.name)} style={{ color: 'var(--danger)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
-                                            <Trash2 size={16} />
-                                        </button>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '4rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                                        <svg width="80" height="80" viewBox="0 0 100 100" className="fidget-spinner">
+                                            {/* Center Bearing */}
+                                            <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                                            {/* Protruding Arms */}
+                                            <g fill="var(--brand-primary)">
+                                                <circle cx="50" cy="20" r="15" />
+                                                <rect x="42" y="20" width="16" height="30" />
+                                                
+                                                <circle cx="24" cy="65" r="15" />
+                                                <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                                
+                                                <circle cx="76" cy="65" r="15" />
+                                                <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                                            </g>
+                                            {/* Weighted Bearings */}
+                                            <circle cx="50" cy="20" r="5" fill="#333" />
+                                            <circle cx="24" cy="65" r="5" fill="#333" />
+                                            <circle cx="76" cy="65" r="5" fill="#333" />
+                                        </svg>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.1rem', display: 'block' }}>Preparando ambiente...</span>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Carregando dados dos usuários</span>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
-                        ))}
-                        {users.length === 0 && (
+                        ) : users.length > 0 ? (
+                            users.map((u, idx) => (
+                                <tr key={u.id || idx}>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            {u.photoUrl ? (
+                                                <img src={u.photoUrl} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                                                    {u.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <strong style={{ fontWeight: 500 }}>{u.name}</strong>
+                                        </div>
+                                    </td>
+                                    <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
+                                    <td>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{u.profile.replace('_', ' ')}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                            {u.tenant?.name || u.logisticsOperator?.name || 'V.tal (Interno)'}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'}`}>
+                                            {u.active ? 'Ativo' : 'Inativo'}
+                                        </span>
+                                    </td>
+                                    <td style={{ width: '100px' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                            <button onClick={() => handleEdit(u)} style={{ color: 'var(--brand-primary)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                                                <Edit size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(u.id, u.name)} style={{ color: 'var(--danger)', padding: '0.2rem', cursor: 'pointer', background: 'transparent', border: 'none' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
                             <tr>
                                 <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
-                                    Nenhum usuário localizado.
+                                    Nenhum Usuário Localizado.
                                 </td>
                             </tr>
                         )}

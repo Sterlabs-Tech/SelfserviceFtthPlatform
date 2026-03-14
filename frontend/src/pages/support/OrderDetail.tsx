@@ -61,6 +61,18 @@ export const OrderDetail = () => {
     if (!order) return <div style={{ padding: '2rem' }}>Ordem não encontrada.</div>;
 
     const fullAddressLabel = `${order.customerAddress}${order.customerNeighborhood ? `, ${order.customerNeighborhood}` : ''}${order.customerCity ? ` - ${order.customerCity}` : ''}${order.customerState ? `/${order.customerState}` : ''}${order.customerZip ? ` - CEP: ${order.customerZip}` : ''}`;
+    
+    // Statuses that represent the end of the workflow
+    const CLOSED_STATUSES = ['CANCELLED', 'COMPLETED'];
+    
+    // Statuses where the material is already in possession of the customer or logic prevents reassignment
+    const POSSESSION_STATUSES = [
+        'DELIVERY_CONFIRMED', 
+        'ONT_ACTIVATION_STARTED', 
+        'ONT_ASSOCIATION_FAILED', 
+        'COMPLETED', 
+        'SUPPORT_REQUIRED'
+    ];
 
     return (
         <div style={{ paddingBottom: '3rem' }}>
@@ -318,23 +330,29 @@ export const OrderDetail = () => {
                         </div>
                     </div>
 
-                    {/* Action Card */}
-                    <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <AlertCircle size={18} /> Ações de Suporte
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                            Estas ações afetam o workflow da ordem e devem ser usadas com cautela.
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <button className="btn-secondary" style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }}>
-                                Cancelar Ordem
-                            </button>
-                            <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                                Reatribuir Operador
-                            </button>
+                    {/* Action Card - Only visible for open orders */}
+                    {!CLOSED_STATUSES.includes(order.status) && (
+                        <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <AlertCircle size={18} /> Ações de Suporte
+                            </h3>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                Estas ações afetam o workflow da ordem e devem ser usadas com cautela.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <button className="btn-secondary" style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }}>
+                                    Cancelar Ordem
+                                </button>
+                                
+                                {/* Only allow reassignment if material is not with customer yet */}
+                                {!POSSESSION_STATUSES.includes(order.status) && (
+                                    <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                        Reatribuir Operador
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

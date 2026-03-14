@@ -29,8 +29,33 @@ export const AdminHome = () => {
         fetchData();
     }, []);
 
-    if (loading || !data) {
-        return <div style={{ padding: '2rem', textAlign: 'center' }}>Carregando dashboard operacional...</div>;
+    if (loading && !data) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '80vh',
+                gap: '1.5rem'
+            }}>
+                <svg width="80" height="80" viewBox="0 0 100 100" className="fidget-spinner">
+                    <circle cx="50" cy="50" r="10" fill="var(--text-primary)" />
+                    <g fill="var(--brand-primary)">
+                        <circle cx="50" cy="20" r="15" />
+                        <rect x="42" y="20" width="16" height="30" />
+                        <circle cx="24" cy="65" r="15" />
+                        <path d="M50 50 L24 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                        <circle cx="76" cy="65" r="15" />
+                        <path d="M50 50 L76 65" stroke="var(--brand-primary)" strokeWidth="16" strokeLinecap="round" />
+                    </g>
+                    <circle cx="50" cy="20" r="5" fill="#333" />
+                    <circle cx="24" cy="65" r="5" fill="#333" />
+                    <circle cx="76" cy="65" r="5" fill="#333" />
+                </svg>
+                <p style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '1.1rem' }}>Sintonizando indicadores operacionais...</p>
+            </div>
+        );
     }
 
     const cards = [

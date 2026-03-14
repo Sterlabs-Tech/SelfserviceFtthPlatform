@@ -13,6 +13,7 @@ import { CreateOrder } from './pages/support/CreateOrder';
 import { OrderSearch } from './pages/support/OrderSearch';
 import { OrderDetail } from './pages/support/OrderDetail';
 import { AdminHome } from './pages/admin/AdminHome';
+import { OperatorDetails } from './pages/admin/OperatorDetails';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import { Login } from './pages/auth/Login';
 
@@ -47,6 +48,7 @@ function AppRoutes() {
                 <Route path="home" element={<AdminHome />} />
                 <Route path="tenants" element={<Tenants />} />
                 <Route path="logistics" element={<Logistics />} />
+                <Route path="logistics/:id" element={<OperatorDetails />} />
                 <Route path="stock" element={<Stock />} />
                 <Route path="users" element={<Users />} />
                 <Route path="support" element={<SupportDashboard />} />
