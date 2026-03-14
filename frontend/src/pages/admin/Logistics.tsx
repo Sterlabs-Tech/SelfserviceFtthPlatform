@@ -3,7 +3,7 @@ import api from '../../services/apiClient';
 import { Truck, X, MapPin, Eye } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const UF_OPTIONS: any[] = [];
+
 
 export const Logistics = () => {
     const navigate = useNavigate();
