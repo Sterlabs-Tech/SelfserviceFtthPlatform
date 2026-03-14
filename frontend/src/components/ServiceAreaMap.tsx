@@ -20,14 +20,24 @@ interface ServiceAreaMapProps {
     regions: string; // e.g. "São Gonçalo, Niterói, Maricá"
 }
 
+// Helper to normalize strings for comparison (remove accents and lowercase)
+const normalize = (str: string) => {
+    return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+};
+
 // Helper to auto-fit the map to the GeoJSON bounds
 const FitBounds = ({ geojson }: { geojson: any }) => {
     const map = useMap();
     useEffect(() => {
         if (geojson) {
-            const bounds = L.geoJSON(geojson).getBounds();
+            const geojsonLayer = L.geoJSON(geojson);
+            const bounds = geojsonLayer.getBounds();
             if (bounds.isValid()) {
-                map.fitBounds(bounds);
+                map.fitBounds(bounds, { padding: [20, 20] });
             }
         }
     }, [geojson, map]);
@@ -39,8 +49,12 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
     const [loading, setLoading] = useState(true);
 
     const activeRegions = useMemo(() => 
-        regions ? regions.split(',').map(r => r.trim().toLowerCase()) : [], 
+        regions ? regions.split(',').map(r => normalize(r)) : [], 
     [regions]);
+
+    const isStateWide = useMemo(() => 
+        activeRegions.includes(normalize(state)),
+    [activeRegions, state]);
 
     useEffect(() => {
         const fetchGeoData = async () => {
@@ -86,6 +100,7 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
     // We'll need a way to filter the features that are in 'activeRegions'
     // This requires mapping names to IBGE codes.
     const [muniCodes, setMuniCodes] = useState<Record<string, string>>({});
+    const [listMunicipalities, setListMunicipalities] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchCodes = async () => {
@@ -93,9 +108,10 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
             try {
                 const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`);
                 const list = await res.json();
+                setListMunicipalities(list);
                 const mapping: Record<string, string> = {};
                 list.forEach((m: any) => {
-                    mapping[m.nome.toLowerCase()] = m.id.toString();
+                    mapping[normalize(m.nome)] = m.id.toString();
                 });
                 setMuniCodes(mapping);
             } catch (e) {
@@ -106,19 +122,28 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
     }, [state]);
 
     const onEachFeature = (feature: any, layer: any) => {
-        const code = feature.properties.codarea;
-        const muniName = Object.keys(muniCodes).find(key => muniCodes[key] === code);
+        const code = (feature.properties.codarea || feature.id || "").toString();
+        const muniNormalized = Object.keys(muniCodes).find(key => muniCodes[key] === code);
+        const muniName = listMunicipalities.find((m: any) => m.id.toString() === code)?.nome || "";
         
-        if (muniName && activeRegions.includes(muniName)) {
+        const isHighlighted = isStateWide || (muniNormalized && activeRegions.includes(muniNormalized));
+
+        if (isHighlighted) {
             layer.setStyle({
                 fillColor: 'var(--brand-primary)',
                 fillOpacity: 0.6,
-                color: 'var(--brand-accent)',
-                weight: 2
+                color: 'var(--brand-primary)',
+                weight: 1.5
             });
-            layer.bindTooltip(muniName.charAt(0).toUpperCase() + muniName.slice(1), { sticky: true });
-        } else if (muniName) {
-            layer.bindTooltip(muniName.charAt(0).toUpperCase() + muniName.slice(1), { sticky: true });
+            if (muniName) layer.bindTooltip(muniName, { sticky: true });
+        } else {
+            layer.setStyle({
+                fillColor: 'transparent',
+                fillOpacity: 0,
+                color: 'rgba(255,255,255,0.1)',
+                weight: 0.5
+            });
+            if (muniName) layer.bindTooltip(muniName, { sticky: true });
         }
     };
 

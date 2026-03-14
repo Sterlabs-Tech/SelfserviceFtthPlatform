@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/apiClient';
 import { ArrowLeft, Users, Package, Clock, MapPin, TrendingUp, Edit, Trash2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 import { ServiceAreaMap } from '../../components/ServiceAreaMap';
 
@@ -137,7 +137,7 @@ export const OperatorDetails = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
                 {/* Performance Visualizer */}
                 <div className="card" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Performance Detalhada por Mês</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Volume de Pedidos Por Mes</h3>
                     <div style={{ height: '300px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data.performance} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
@@ -149,9 +149,17 @@ export const OperatorDetails = () => {
                                     itemStyle={{ fontSize: '12px' }}
                                     cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                                 />
-                                <Bar dataKey="success" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} barSize={40} />
+                                <Bar dataKey="success" stackId="a" fill="#10b981" barSize={40} />
                                 <Bar dataKey="risk" stackId="a" fill="#f59e0b" />
-                                <Bar dataKey="delayed" stackId="a" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="delayed" stackId="a" fill="#ef4444" radius={[6, 6, 0, 0]}>
+                                    {/* Total Label on top of the stack */}
+                                    <LabelList 
+                                        dataKey={(entry: any) => (entry.success || 0) + (entry.risk || 0) + (entry.delayed || 0)} 
+                                        position="top" 
+                                        style={{ fill: 'var(--text-primary)', fontSize: '12px', fontWeight: 600 }} 
+                                        offset={10}
+                                    />
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
