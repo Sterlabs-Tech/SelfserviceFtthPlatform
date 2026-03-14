@@ -47,6 +47,8 @@ const FitBounds = ({ geojson }: { geojson: any }) => {
 export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
     const [geoData, setGeoData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [muniCodes, setMuniCodes] = useState<Record<string, string>>({});
+    const [listMunicipalities, setListMunicipalities] = useState<any[]>([]);
 
     const activeRegions = useMemo(() => 
         regions ? regions.split(',').map(r => normalize(r)) : [], 
@@ -61,7 +63,6 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
             if (!state) return;
             setLoading(true);
             try {
-                // Fetch all municipalities for the given state from IBGE
                 const response = await fetch(
                     `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${state}?formato=application/vnd.geo+json&qualidade=minima&intrarregiao=municipio`
                 );
@@ -75,32 +76,6 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
         };
         fetchGeoData();
     }, [state]);
-
-    const geojsonStyle = () => {
-        // IBGE GeoJSON features usually have a 'nome' or 'codarea' in properties
-        // The intrarregiao=municipio returns features where 'codarea' is the ID
-        // But we need to match by name or get the names.
-        // Actually, IBGE v3 malhas returns 'codarea'. We might need to fetch the names separately
-        // or just use a quality source that has names.
-        
-        // Wait, the API response for malhas/estados/{id}?intrarregiao=municipio 
-        // usually includes municipality codes in 'codarea'.
-        // Let's assume we can match names if we fetch names first.
-        
-        // Revised strategy: fetch municipality list (with names and IDs) first.
-        return {
-            fillColor: 'transparent',
-            weight: 1,
-            opacity: 0.5,
-            color: 'var(--border-color)',
-            fillOpacity: 0
-        };
-    };
-
-    // We'll need a way to filter the features that are in 'activeRegions'
-    // This requires mapping names to IBGE codes.
-    const [muniCodes, setMuniCodes] = useState<Record<string, string>>({});
-    const [listMunicipalities, setListMunicipalities] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchCodes = async () => {
@@ -121,34 +96,38 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
         fetchCodes();
     }, [state]);
 
-    const onEachFeature = (feature: any, layer: any) => {
-        const code = (feature.properties.codarea || feature.id || "").toString();
+    const geojsonStyle = (feature: any) => {
+        const code = (feature.properties?.codarea || feature.id || "").toString();
         const muniNormalized = Object.keys(muniCodes).find(key => muniCodes[key] === code);
-        const muniName = listMunicipalities.find((m: any) => m.id.toString() === code)?.nome || "";
         
         const isHighlighted = isStateWide || (muniNormalized && activeRegions.includes(muniNormalized));
 
         if (isHighlighted) {
-            layer.setStyle({
-                fillColor: 'var(--brand-primary)',
-                fillOpacity: 0.6,
-                color: 'var(--brand-primary)',
-                weight: 1.5
-            });
-            if (muniName) layer.bindTooltip(muniName, { sticky: true });
-        } else {
-            layer.setStyle({
-                fillColor: 'transparent',
-                fillOpacity: 0,
-                color: 'rgba(255,255,255,0.1)',
-                weight: 0.5
-            });
-            if (muniName) layer.bindTooltip(muniName, { sticky: true });
+            return {
+                fillColor: '#FFD919',
+                fillOpacity: 0.7,
+                color: '#e6c214',
+                weight: 2
+            };
+        }
+        return {
+            fillColor: 'rgba(0,0,0,0.02)',
+            fillOpacity: 0.05,
+            color: 'rgba(0,0,0,0.08)',
+            weight: 0.5
+        };
+    };
+
+    const onEachFeature = (feature: any, layer: any) => {
+        const code = (feature.properties?.codarea || feature.id || "").toString();
+        const muniName = listMunicipalities.find((m: any) => m.id.toString() === code)?.nome || "";
+        if (muniName) {
+            layer.bindTooltip(muniName, { sticky: true });
         }
     };
 
     if (loading || !geoData) return (
-        <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d0d0d', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Carregando mapa regional...</span>
         </div>
     );
@@ -157,9 +136,9 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
         <div style={{ 
             height: '350px', 
             width: '100%',
-            background: '#0d0d0d', 
+            background: '#ffffff', 
             borderRadius: '16px', 
-            border: '1px solid rgba(255,255,255,0.05)',
+            border: '1px solid var(--border-color)',
             position: 'relative',
             overflow: 'hidden',
             zIndex: 1
@@ -171,10 +150,11 @@ export const ServiceAreaMap = ({ state, regions }: ServiceAreaMapProps) => {
                 zoomControl={false}
             >
                 <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
                 <GeoJSON 
+                    key={`${state}-${activeRegions.length}-${Object.keys(muniCodes).length}-${isStateWide}`}
                     data={geoData} 
                     style={geojsonStyle} 
                     onEachFeature={onEachFeature}

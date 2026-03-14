@@ -58,10 +58,24 @@ export const OperatorDetails = () => {
 
     const op = data.operator;
 
+    const DayBadge = ({ label, active }: { label: string, active: boolean }) => (
+        <span style={{ 
+            fontSize: '0.7rem', 
+            padding: '3px 10px', 
+            background: active ? 'rgba(245, 217, 25, 0.15)' : 'rgba(0,0,0,0.05)', 
+            color: active ? 'var(--brand-primary)' : 'var(--text-secondary)', 
+            borderRadius: '6px',
+            border: active ? '1px solid rgba(245, 217, 25, 0.3)' : '1px solid var(--border-color)',
+            fontWeight: active ? 600 : 400
+        }}>
+            {label}
+        </span>
+    );
+
     return (
         <div className="page-container">
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <button onClick={() => navigate(-1)} className="btn-secondary" style={{ padding: '0.4rem', borderRadius: '8px', display: 'flex' }}>
                         <ArrowLeft size={18} />
@@ -69,7 +83,7 @@ export const OperatorDetails = () => {
                     <div>
                         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{op.name}</h1>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                            <MapPin size={14} /> {op.city}, {op.state} • Operador Ativo
+                            <MapPin size={14} /> {op.city}, {op.state} • Operador {op.active ? 'Habilitado' : 'Inativo'}
                         </div>
                     </div>
                 </div>
@@ -101,36 +115,93 @@ export const OperatorDetails = () => {
                 </div>
             </div>
 
-            {/* Quick Stats Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                <div className="card" style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <Users size={20} color="var(--brand-primary)" />
-                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(52, 211, 153, 0.1)', color: '#10b981', borderRadius: '20px' }}>Ativos</span>
+            {/* Operator Info Panel */}
+            <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                    {/* Operation Address & Status */}
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                            <div style={{ 
+                                padding: '8px', 
+                                background: 'rgba(245, 217, 25, 0.1)', 
+                                color: 'var(--brand-primary)', 
+                                borderRadius: '10px' 
+                            }}>
+                                <MapPin size={20} />
+                            </div>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Endereço da Operação</h3>
+                                <div style={{ fontSize: '1rem', fontWeight: 600 }}>
+                                    {op.street && op.number ? `${op.street}, ${op.number}` : 'Endereço não informado'}
+                                    {op.complement ? ` - ${op.complement}` : ''}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    {op.neighborhood && `${op.neighborhood}, `}{op.city} - {op.state} {op.zipCode && `(${op.zipCode})`}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ 
+                                fontSize: '0.75rem', 
+                                fontWeight: 600,
+                                padding: '4px 12px', 
+                                background: op.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                                color: op.active ? '#10b981' : '#ef4444', 
+                                borderRadius: '20px',
+                                border: `1px solid ${op.active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+                            }}>
+                                {op.active ? 'OPERADOR HABILITADO' : 'OPERADOR INATIVO'}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                <Users size={14} /> <strong>{data.deliverers.length}</strong> entregadores
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{data.deliverers.length}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Entregadores vinculados</div>
-                </div>
-                <div className="card" style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <Package size={20} color="#3b82f6" />
+
+                    {/* Operation Schedule */}
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                            <div style={{ 
+                                padding: '8px', 
+                                background: 'rgba(59, 130, 246, 0.1)', 
+                                color: '#3b82f6', 
+                                borderRadius: '10px' 
+                            }}>
+                                <Clock size={20} />
+                            </div>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Horário e SLA</h3>
+                                <div style={{ fontSize: '1rem', fontWeight: 600 }}>
+                                    {op.businessStart} às {op.businessEnd}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    SLA de Entrega: <strong>{op.slaHours}h</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <DayBadge label="Sáb" active={op.workSaturdays} />
+                            <DayBadge label="Dom" active={op.workSundays} />
+                            <DayBadge label="Feriados" active={op.workHolidays} />
+                        </div>
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{data.totalDeliveries}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Total de ordens atendidas</div>
-                </div>
-                <div className="card" style={{ padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <Clock size={20} color="#f59e0b" />
+
+                    {/* Quick Metrics */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Performance Total</span>
+                            <TrendingUp size={16} color="var(--brand-primary)" />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '1.75rem', fontWeight: 700 }}>98.2%</span>
+                            <span style={{ fontSize: '0.75rem', color: '#10b981' }}>+2.4%</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                            De {data.totalDeliveries} ordens atendidas
+                        </div>
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{op.slaHours}h</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>SLA Contratual médio</div>
-                </div>
-                <div className="card" style={{ padding: '1.25rem', background: 'var(--brand-primary)', color: 'white' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <TrendingUp size={20} />
-                    </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>98.2%</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Taxa de sucesso acumulada</div>
                 </div>
             </div>
 
