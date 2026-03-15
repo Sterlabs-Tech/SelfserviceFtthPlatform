@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, onClose, module }: SidebarProps) => {
                                 Administração
                             </div>
                             <NavLink to="/admin/stock" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                                <Package size={20} /> Estoque
+                                <Package size={20} /> Abastecimento
                             </NavLink>
                             <NavLink to="/admin/logistics" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <Truck size={20} /> Operadores

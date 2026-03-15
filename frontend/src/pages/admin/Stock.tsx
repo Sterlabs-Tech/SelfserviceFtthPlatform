@@ -15,6 +15,7 @@ export const Stock = () => {
         modelCode: 'G-240W-C',
         quantity: 0
     });
+    const [showOnlyCritical, setShowOnlyCritical] = useState(false);
 
     const [materials, setMaterials] = useState<any[]>([]);
 
@@ -78,7 +79,8 @@ export const Stock = () => {
             modelCode: item.modelCode,
             quantity: item.quantity
         });
-        setEditingId(item.id);
+        // If it's a virtual item (not in DB), we set editingId to null to trigger a POST (create)
+        setEditingId(item.isVirtual ? null : item.id);
         setShowForm(true);
     };
 
@@ -119,18 +121,49 @@ export const Stock = () => {
         <div>
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Inventário de Materiais</h1>
-                    <p className="page-subtitle">Acompanhe disponibilidade consolidada por Operador Logístico.</p>
+                    <h1 className="page-title">Gestão de Abastecimento</h1>
+                    <p className="page-subtitle">Identifique operadores com baixo estoque e coordene a reposição de materiais.</p>
                 </div>
-                {!showForm && (
-                    <button className="btn-primary" onClick={() => {
-                        setEditingId(null);
-                        resetForm();
-                        setShowForm(true);
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                    <label style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem', 
+                        cursor: 'pointer', 
+                        fontSize: '0.85rem', 
+                        color: showOnlyCritical ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                        fontWeight: showOnlyCritical ? 600 : 400,
+                        background: showOnlyCritical ? 'rgba(245, 158, 11, 0.05)' : 'transparent',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        border: `1px solid ${showOnlyCritical ? 'var(--brand-primary)' : 'var(--border-color)'}`,
+                        transition: '0.2s all'
                     }}>
-                        <PackagePlus size={18} /> Cadastrar
-                    </button>
-                )}
+                        <input 
+                            type="checkbox" 
+                            checked={showOnlyCritical} 
+                            onChange={e => setShowOnlyCritical(e.target.checked)} 
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--brand-primary)' }}
+                        />
+                        Apenas itens criticos / baixos
+                    </label>
+                    {!showForm && (
+                        <div style={{ 
+                            fontSize: '0.9rem', 
+                            color: 'var(--text-secondary)', 
+                            background: 'var(--bg-tertiary)', 
+                            padding: '0.6rem 1.2rem', 
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                             <Edit size={16} style={{ color: 'var(--brand-primary)' }} />
+                            <span>Clique em uma linha para editar o estoque</span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {showForm && (
@@ -199,12 +232,12 @@ export const Stock = () => {
                         <tr>
                             <th>Operador</th>
                             <th>Tipo</th>
-                            <th>Fabricante</th>
-                            <th>Modelo/Código</th>
+                            <th>Material / Modelo</th>
                             <th>Quantidade</th>
-                            <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
+                            <th>Status de Abastecimento</th>
                         </tr>
                     </thead>
+                    <tbody>
                         {isLoading ? (
                             <tr>
                                 <td colSpan={6} style={{ textAlign: 'center', padding: '4rem' }}>
@@ -230,35 +263,101 @@ export const Stock = () => {
                                     </div>
                                 </td>
                             </tr>
-                        ) : stock.length > 0 ? (
-                            stock.map((s, idx) => (
-                                <tr key={idx}>
-                                    <td>{s.operator?.name || 'V.tal (Sede)'}</td>
-                                    <td>{s.tipo || 'ONT'}</td>
-                                    <td>{s.manufacturer}</td>
-                                    <td>{s.modelCode}</td>
+                        ) : (() => {
+                            // 1. Create a full matrix of all Operators x all MaterialItems
+                            const fullMatrix: any[] = [];
+                            ops.forEach(op => {
+                                materials.forEach(mat => {
+                                    const existing = stock.find(s => s.operatorId === op.id && s.modelCode === mat.modelCode);
+                                    if (existing) {
+                                        fullMatrix.push({ ...existing, isVirtual: false });
+                                    } else {
+                                        fullMatrix.push({
+                                            id: `virtual-${op.id}-${mat.modelCode}`,
+                                            operatorId: op.id,
+                                            tipo: mat.tipo,
+                                            manufacturer: mat.manufacturer,
+                                            modelCode: mat.modelCode,
+                                            quantity: 0,
+                                            operator: op,
+                                            isVirtual: true
+                                        });
+                                    }
+                                });
+                            });
+
+                            const filteredStock = fullMatrix
+                                .filter(s => !showOnlyCritical || s.quantity < 20)
+                                .sort((a, b) => {
+                                    // Primary sort: 0/Virtual first
+                                    if (a.quantity === 0 && b.quantity !== 0) return -1;
+                                    if (a.quantity !== 0 && b.quantity === 0) return 1;
+                                    // Secondary sort: < 20 next
+                                    if (a.quantity < 20 && b.quantity >= 20) return -1;
+                                    if (a.quantity >= 20 && b.quantity < 20) return 1;
+                                    // Final sort: quantity ascending
+                                    return a.quantity - b.quantity;
+                                });
+
+                            if (filteredStock.length === 0) {
+                                return (
+                                    <tr>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                                            {showOnlyCritical ? 'Nenhum item em estado crítico ou baixo.' : 'Estoque vazio ou não cadastrado.'}
+                                        </td>
+                                    </tr>
+                                );
+                            }
+
+                            return filteredStock.map((s, idx) => (
+                                <tr 
+                                    key={idx} 
+                                    onClick={() => handleEdit(s)}
+                                    title={s.isVirtual ? 'Clique para cadastrar estoque' : 'Clique para editar estoque'}
+                                    style={{ 
+                                        background: s.quantity === 0 ? 'rgba(239, 68, 68, 0.05)' : s.quantity < 20 ? 'rgba(245, 158, 11, 0.05)' : 'inherit',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = s.quantity === 0 ? 'rgba(239, 68, 68, 0.1)' : s.quantity < 20 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(0,0,0,0.02)' }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = s.quantity === 0 ? 'rgba(239, 68, 68, 0.05)' : s.quantity < 20 ? 'rgba(245, 158, 11, 0.05)' : 'inherit' }}
+                                >
+                                    <td style={{ fontWeight: 600 }}>{s.operator?.name || 'V.tal (Sede)'}</td>
                                     <td>
-                                        <span className={`badge ${s.quantity > 20 ? 'badge-success' : s.quantity > 0 ? 'badge-warning' : 'badge-danger'}`}>
-                                            {s.quantity} em estoque
+                                        <span style={{ fontSize: '0.75rem', padding: '2px 6px', background: 'var(--bg-tertiary)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                                            {s.tipo || 'ONT'}
                                         </span>
                                     </td>
-                                    <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                        <button onClick={() => handleEdit(s)} style={{ color: 'var(--brand-primary)', padding: '0.2rem' }}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(s.id, s.modelCode)} style={{ color: 'var(--danger)', padding: '0.2rem' }}>
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <td>
+                                        <div style={{ fontSize: '0.9rem' }}>
+                                            <strong>{s.manufacturer}</strong>
+                                            <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{s.modelCode}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: '40px', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '10px', overflow: 'hidden' }}>
+                                                <div style={{ 
+                                                    height: '100%', 
+                                                    width: `${Math.min((s.quantity / 100) * 100, 100)}%`, 
+                                                    background: s.quantity === 0 ? '#ef4444' : s.quantity < 20 ? '#f59e0b' : '#10b981'
+                                                }} />
+                                            </div>
+                                            <strong>{s.quantity}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${s.quantity >= 20 ? 'badge-success' : 'badge-danger'}`} style={{ 
+                                            background: s.quantity === 0 ? '#ef4444' : s.quantity < 20 ? '#f59e0b' : '',
+                                            color: (s.quantity === 0 || s.quantity < 20) ? '#fff' : ''
+                                        }}>
+                                            {s.quantity === 0 ? (s.isVirtual ? 'NÃO CADASTRADO: SEM ESTOQUE' : 'CRÍTICO: SEM ESTOQUE') : s.quantity < 20 ? 'BAIXO: NECESSITA REPOSIÇÃO' : 'OK: ESTOQUE NORMAL'}
+                                        </span>
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
-                                    Estoque vazio ou não cadastrado.
-                                </td>
-                            </tr>
-                        )}
+                            ));
+                        })()}
+                    </tbody>
                 </table>
             </div>
         </div>

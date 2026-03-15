@@ -459,7 +459,7 @@ export const OperatorDetails = () => {
                             style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
                             onClick={() => { resetStockForm(); setShowStockForm(true); }}
                         >
-                            <PackagePlus size={14} style={{ marginRight: '4px' }} /> Nova Peça
+                            <PackagePlus size={14} style={{ marginRight: '4px' }} /> Novo Tipo de Material
                         </button>
                     </div>
 
@@ -594,7 +594,21 @@ export const OperatorDetails = () => {
                         <form onSubmit={handleStockSubmit} style={{ display: 'grid', gap: '1rem' }}>
                             <div className="input-group">
                                 <label className="input-label">Tipo</label>
-                                <select className="input-field" value={stockFormData.tipo} onChange={e => setStockFormData({ ...stockFormData, tipo: e.target.value })} required>
+                                <select 
+                                    className="input-field" 
+                                    value={stockFormData.tipo} 
+                                    onChange={e => {
+                                        const newTipo = e.target.value;
+                                        const filtered = materials.filter(m => m.tipo === newTipo);
+                                        setStockFormData({ 
+                                            ...stockFormData, 
+                                            tipo: newTipo,
+                                            manufacturer: filtered[0]?.manufacturer || '',
+                                            modelCode: filtered[0]?.modelCode || ''
+                                        });
+                                    }} 
+                                    required
+                                >
                                     <option value="ONT">ONT</option>
                                     <option value="MESH">MESH</option>
                                 </select>
