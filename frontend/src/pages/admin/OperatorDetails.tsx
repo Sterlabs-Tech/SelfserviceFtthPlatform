@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/apiClient';
 import { ArrowLeft, Users, Clock, MapPin, TrendingUp, Edit, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
-import { PackagePlus, UserPlus, X, Camera } from 'lucide-react';
+import { UserPlus, X, Camera } from 'lucide-react';
 import { formatNumber } from '../../utils/formatters';
 
 import { ServiceAreaMap } from '../../components/ServiceAreaMap';
@@ -99,15 +99,7 @@ export const OperatorDetails = () => {
         setShowStockForm(true);
     };
 
-    const handleDeleteStock = async (stockId: string, model: string) => {
-        if (!confirm(`Excluir estoque de ${model}?`)) return;
-        try {
-            await api.delete(`/api/stock/${stockId}`);
-            loadDetails();
-        } catch (err) {
-            alert('Erro ao excluir estoque.');
-        }
-    };
+
 
     const handleStockSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
