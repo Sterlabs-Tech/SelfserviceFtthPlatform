@@ -40,6 +40,9 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  zoom: 0.9;
+  width: 111.1111vw;
+  min-height: 111.1111vh;
 }
 
 /* Base Elements */
@@ -234,9 +237,21 @@ button {
 }
 
 @media (max-width: 1024px) {
-  .grid-2-1, .grid-1-1 {
-    grid-template-columns: 1fr;
+  .grid-2-1, .grid-1-1, .grid-responsive-3, .grid-responsive-2 {
+    grid-template-columns: 1fr !important;
   }
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
 }
 
 /* Badges */
@@ -264,8 +279,11 @@ button {
 /* Layout */
 .layout-container {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
   overflow: hidden;
 }
 
@@ -719,18 +737,24 @@ button {
   }
 
   .summary-card {
-    padding: 1rem;
-    flex-direction: column;
-    text-align: center;
+    padding: 0.75rem;
+    flex-direction: row;
+    text-align: left;
+    gap: 0.75rem;
   }
 
   .summary-card-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 
   .summary-card-value {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+  }
+
+  .summary-card-label {
+    font-size: 0.7rem;
+    margin-top: 2px;
   }
 
   .drilldown-row {

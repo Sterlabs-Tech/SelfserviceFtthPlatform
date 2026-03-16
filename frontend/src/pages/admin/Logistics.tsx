@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
 import { Truck, X, MapPin, Eye } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { formatNumber } from '../../utils/formatters';
 
 
 
@@ -378,7 +379,7 @@ export const Logistics = () => {
                                             {o.active ? 'Habilitado' : 'Desabilitado'}
                                         </span>
                                     </td>
-                                    <td>{o.slaHours}h</td>
+                                    <td>{formatNumber(o.slaHours)}h</td>
                                     <td>{o.state || '-'}</td>
                                     <td>
                                         <div style={{ maxHeight: '120px', overflowY: 'auto', padding: '0.5rem 0' }}>

@@ -27,7 +27,7 @@ export const Tenants: React.FC = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const res = await api.get('/tenants');
+            const res = await api.get('/api/tenants');
             setTenants(res.data);
         } catch (e) {
             console.error(e);
@@ -55,7 +55,7 @@ export const Tenants: React.FC = () => {
     const handleDelete = async () => {
         if (!confirmDelete) return;
         try {
-            await api.delete(`/tenants/${confirmDelete.id}`);
+            await api.delete(`/api/tenants/${confirmDelete.id}`);
             setTenants(tenants.filter(t => t.id !== confirmDelete.id));
             setConfirmDelete(null);
         } catch (error: any) {
@@ -69,7 +69,7 @@ export const Tenants: React.FC = () => {
         e.preventDefault();
         try {
             if (editingId) {
-                await api.put(`/tenants/${editingId}`, formData);
+                await api.put(`/api/tenants/${editingId}`, formData);
             } else {
                 await api.post('/api/tenants', formData);
             }
@@ -221,7 +221,7 @@ export const Tenants: React.FC = () => {
                 </div>
             )}
 
-            <div className="glass-panel">
+            <div className="glass-panel" style={{ overflowX: 'auto' }}>
                 <table className="data-table">
                     <thead>
                         <tr>
@@ -232,6 +232,7 @@ export const Tenants: React.FC = () => {
                             <th style={{ width: '80px', textAlign: 'center' }}>Excluir</th>
                         </tr>
                     </thead>
+                    <tbody>
                         {isLoading ? (
                             <tr>
                                 <td colSpan={5} style={{ textAlign: 'center', padding: '4rem' }}>
@@ -259,7 +260,7 @@ export const Tenants: React.FC = () => {
                             </tr>
                         ) : tenants.length > 0 ? (
                             tenants.map((t, idx) => (
-                                <tr key={idx} onClick={() => handleEdit(t)} style={{ cursor: 'pointer' }}>
+                                <tr key={t.id || idx} onClick={() => handleEdit(t)} style={{ cursor: 'pointer' }}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             {t.logoUrl ? (
@@ -295,6 +296,7 @@ export const Tenants: React.FC = () => {
                                 </td>
                             </tr>
                         )}
+                    </tbody>
                 </table>
             </div>
 

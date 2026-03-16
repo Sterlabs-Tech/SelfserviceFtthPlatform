@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
-import { PackagePlus, X, Edit, Trash2 } from 'lucide-react';
+import { X, Edit } from 'lucide-react';
+import { formatNumber } from '../../utils/formatters';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const Stock = () => {
     const [stock, setStock] = useState<any[]>([]);
@@ -18,6 +20,7 @@ export const Stock = () => {
     const [showOnlyCritical, setShowOnlyCritical] = useState(false);
 
     const [materials, setMaterials] = useState<any[]>([]);
+    const { user } = useAuth();
 
     const loadData = async () => {
         setIsLoading(true);
@@ -27,8 +30,16 @@ export const Stock = () => {
                 api.get('/api/logistics'),
                 api.get('/api/materials')
             ]);
-            setStock(stockRes.data);
-            setOps(opsRes.data);
+            let stockData = stockRes.data;
+            let opsData = opsRes.data;
+
+            if (user?.profile === 'LOGISTICS_OPERATOR' && user.logisticsOperatorId) {
+                opsData = opsData.filter((o: any) => o.id === user.logisticsOperatorId);
+                stockData = stockData.filter((s: any) => s.operatorId === user.logisticsOperatorId);
+            }
+
+            setStock(stockData);
+            setOps(opsData);
             setMaterials(matRes.data);
         } catch (e) {
             console.error(e);
@@ -84,16 +95,6 @@ export const Stock = () => {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string, code: string) => {
-        if (!confirm(`Tem certeza que deseja excluir o estoque do modelo ${code}?`)) return;
-        try {
-            await api.delete(`/api/stock/${id}`);
-            loadData();
-        } catch (err) {
-            console.error(err);
-            alert('Erro ao excluir estoque.');
-        }
-    };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
@@ -343,7 +344,7 @@ export const Stock = () => {
                                                     background: s.quantity === 0 ? '#ef4444' : s.quantity < 20 ? '#f59e0b' : '#10b981'
                                                 }} />
                                             </div>
-                                            <strong>{s.quantity}</strong>
+                                            <strong>{formatNumber(s.quantity)}</strong>
                                         </div>
                                     </td>
                                     <td>

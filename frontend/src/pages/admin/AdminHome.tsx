@@ -8,6 +8,7 @@ import {
     BarChart, Bar, Legend, LabelList
 } from 'recharts';
 import { BrazilMap } from '../../components/BrazilMap';
+import { formatNumber } from '../../utils/formatters';
 
 export const AdminHome = () => {
     const { user } = useAuth();
@@ -112,7 +113,7 @@ export const AdminHome = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                                 <div style={{ color: card.color, marginBottom: '0.75rem' }}>{card.icon}</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{card.value}</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{formatNumber(card.value)}</div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{card.label}</div>
                             </div>
                             <ArrowRight size={18} style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }} />

@@ -258,7 +258,8 @@ export const SupportDashboard = () => {
                                 </span>
                             </div>
                             {searchResults.length > 0 && (
-                                <table className="data-table">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="data-table">
                                     <thead>
                                         <tr>
                                             <th>OS</th>
@@ -286,6 +287,7 @@ export const SupportDashboard = () => {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
                             )}
                         </div>
                     )}

@@ -123,7 +123,7 @@ export const StatusOrders = () => {
                 </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+            <div className="glass-panel" style={{ overflowX: 'auto' }}>
                 <table className="data-table">
                     <thead>
                         <tr>

@@ -6,6 +6,7 @@ import { Logistics } from './pages/admin/Logistics';
 import { Stock } from './pages/admin/Stock';
 import { Users } from './pages/admin/Users';
 import { OperatorDashboard } from './pages/logistics/OperatorDashboard';
+import { OperatorHome } from './pages/logistics/OperatorHome';
 import { DelivererDashboard } from './pages/logistics/DelivererDashboard';
 import { SupportDashboard } from './pages/support/SupportDashboard';
 import { DevSupport } from './pages/support/DevSupport';
@@ -66,7 +67,8 @@ function AppRoutes() {
                     <Layout module="operator" />
                 </ProtectedRoute>
             }>
-                <Route index element={<Navigate to="pipeline" replace />} />
+                <Route index element={<Navigate to="home" replace />} />
+                <Route path="home" element={<OperatorHome />} />
                 <Route path="stock" element={<Stock />} />
                 <Route path="pipeline" element={<OperatorDashboard />} />
             </Route>

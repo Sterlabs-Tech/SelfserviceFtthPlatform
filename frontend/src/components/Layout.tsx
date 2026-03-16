@@ -67,14 +67,22 @@ const Sidebar = ({ isOpen, onClose, module }: SidebarProps) => {
                     {/* ── Módulo Operador Logístico ── */}
                     {module === 'operator' && (
                         <>
+                            <NavLink to="/operator/home" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                                <Home size={20} /> Início
+                            </NavLink>
+
                             <div className="sidebar-section-title" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Operação
+                                Pedidos
+                            </div>
+                            <NavLink to="/operator/pipeline" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                                <Package size={20} /> Em Andamento
+                            </NavLink>
+
+                            <div className="sidebar-section-title" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Administração
                             </div>
                             <NavLink to="/operator/stock" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                                <Package size={20} /> Estoque
-                            </NavLink>
-                            <NavLink to="/operator/pipeline" onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                                <Package size={20} /> Esteira Despacho
+                                <Package size={20} /> Abastecimento
                             </NavLink>
                         </>
                     )}

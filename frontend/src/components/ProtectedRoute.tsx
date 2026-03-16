@@ -17,7 +17,7 @@ export const getHomeRoute = (profile: string): string => {
             return '/admin/home';
         case 'LOGISTICS_OPERATOR':
         case 'LOGISTICS_CONSULT':
-            return '/operator/pipeline';
+            return '/operator/home';
         case 'DELIVERER':
             return '/deliverer/entregas';
         default:

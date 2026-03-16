@@ -4,6 +4,7 @@ import api from '../../services/apiClient';
 import { ArrowLeft, Users, Clock, MapPin, TrendingUp, Edit, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { PackagePlus, UserPlus, X, Camera } from 'lucide-react';
+import { formatNumber } from '../../utils/formatters';
 
 import { ServiceAreaMap } from '../../components/ServiceAreaMap';
 
@@ -264,7 +265,7 @@ export const OperatorDetails = () => {
             </div>
 
             {/* Top Info Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            <div className="grid-responsive-3" style={{ gap: '1.5rem', marginBottom: '2.5rem' }}>
                 {/* Card 1: Address & Status */}
                 <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
@@ -301,7 +302,7 @@ export const OperatorDetails = () => {
                             {op.active ? 'HABILITADO' : 'INATIVO'}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                            <Users size={14} /> <strong>{data.deliverers.length}</strong> membros
+                            <Users size={14} /> <strong>{formatNumber(data.deliverers.length)}</strong> membros
                         </div>
                     </div>
                 </div>
@@ -345,13 +346,13 @@ export const OperatorDetails = () => {
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Volume demandado</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{data.performance.reduce((acc: number, curr: any) => acc + curr.success + curr.risk + curr.delayed, 0)}</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{formatNumber(data.performance.reduce((acc: number, curr: any) => acc + curr.success + curr.risk + curr.delayed, 0))}</div>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Volume entregue</div>
                             <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                                {data.performance.reduce((acc: number, curr: any) => acc + curr.success, 0)}
+                                {formatNumber(data.performance.reduce((acc: number, curr: any) => acc + curr.success, 0))}
                                 <span style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', marginLeft: '0.5rem' }}>
                                     ({((data.performance.reduce((acc: number, curr: any) => acc + curr.success, 0) / (data.performance.reduce((acc: number, curr: any) => acc + curr.success + curr.risk + curr.delayed, 0) || 1)) * 100).toFixed(1)}%)
                                 </span>
@@ -378,7 +379,7 @@ export const OperatorDetails = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+            <div className="grid-1-1" style={{ gap: '1.5rem' }}>
                 {/* Performance Visualizer */}
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Volume de Pedidos Por Mes</h3>
@@ -449,18 +450,11 @@ export const OperatorDetails = () => {
             </div>
 
             {/* Bottom Content: Stock and Team */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: '1.5rem', marginTop: '1.5rem' }}>
+            <div className="grid-responsive-2" style={{ gap: '1.5rem', marginTop: '1.5rem' }}>
                 {/* Regional Stock Card */}
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Estoque Local</h3>
-                        <button 
-                            className="btn-primary" 
-                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                            onClick={() => { resetStockForm(); setShowStockForm(true); }}
-                        >
-                            <PackagePlus size={14} style={{ marginRight: '4px' }} /> Novo Tipo de Material
-                        </button>
                     </div>
 
                     <div style={{ display: 'grid', gap: '2rem' }}>
@@ -484,21 +478,15 @@ export const OperatorDetails = () => {
                                                         <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>| {s.modelCode}</span>
                                                     </div>
                                                 </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1, justifyContent: 'center' }}>
                                                         <button 
                                                             onClick={() => handleEditStock(s)} 
-                                                            style={{ border: 'none', background: 'transparent', color: 'var(--brand-primary)', cursor: 'pointer', padding: '0.2rem' }}
+                                                            style={{ border: 'none', background: 'transparent', color: 'var(--brand-primary)', cursor: 'pointer', padding: '0.5rem' }}
                                                         >
-                                                            <Edit size={14} />
+                                                            <Edit size={20} />
                                                         </button>
-                                                        <button 
-                                                            onClick={() => handleDeleteStock(s.id, s.modelCode)}
-                                                            style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{s.quantity}</div>
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{formatNumber(s.quantity)}</div>
                                                             <div style={{ fontSize: '0.65rem', color: s.quantity < 20 ? '#ef4444' : 'var(--text-secondary)', fontWeight: 600 }}>
                                                                 {s.quantity < 20 ? 'ESTOQUE BAIXO' : 'NORMAL'}
                                                             </div>
