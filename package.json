@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build:frontend": "npm install --prefix frontend && npm run build --prefix frontend",
-    "build:backend": "npm install --prefix backend && npx -y prisma generate --schema=backend/prisma/schema.prisma && npx tsc --project backend/tsconfig.json",
+    "build:backend": "npm install --prefix backend && npm run build --prefix backend",
     "build": "npm run build:frontend && npm run build:backend"
   }
 }
