@@ -32,17 +32,13 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', apiRoutes);
 
-import path from 'path';
+// Remove: manual frontend static serving as Vercel handles this better.
 
-// Serve React Frontend static files
-const frontendPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendPath));
+// Start server (only if not running in Vercel/Serverless environment)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Backend server listening at http://localhost:${port}`);
+  });
+}
 
-app.use((req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// Start server
-app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
-});
+export default app;
